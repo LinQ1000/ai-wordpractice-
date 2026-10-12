@@ -1,13 +1,260 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ai-vocabulary</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英语单词背诵站【完整版】</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+body{background:#f4f7fa;color:#222;padding:24px;max-width:900px;margin:0 auto;transition: background 0.3s, color 0.3s;}
+body.dark{background:#1a202c;color:#f1f1f1}
+body.dark .card{background:#2d3748}
+body.dark .word-item{border-bottom-color:#444}
+body.dark .tab{background:#4a5568;color:#fff}
+body.dark .question-area{background:#2d3748}
+h1{text-align:center;margin-bottom:24px;font-size:28px}
+.tab-group{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.tab{padding:10px 18px;border:none;border-radius:8px;background:#dde7f5;cursor:pointer;font-size:16px}
+.tab.active{background:#2b6cb0;color:#fff}
+.card{background:#fff;padding:20px;border-radius:12px;box-shadow:0 2px 10px #00000012;margin-bottom:20px;transition:background 0.3s;}
+.word-item{padding:12px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.word-item:last-child{border-bottom:none}
+.word-left{flex:1}
+.en{font-size:18px;font-weight:500;cursor:pointer;color:#2b6cb0}
+.phonetic{color:#666;margin-left:8px;font-size:14px}
+body.dark .phonetic{color:#a0aec0}
+.cn{color:#333;transition:opacity 0.3s}
+body.dark .cn{color:#e2e8f0}
+.hide-cn .cn{opacity:0}
+.btns{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+button{padding:10px 16px;border-radius:8px;border:none;background:#2b6cb0;color:#fff;cursor:pointer;font-size:15px}
+button.mark-btn{background:#38a169;padding:6px 10px;font-size:13px}
+button.reset-mark{background:#dd6b20;padding:6px 10px;font-size:13px}
+.question-area{margin-top:24px;padding:20px;background:#fff;border-radius:12px;box-shadow:0 2px 10px #00000012;transition:background 0.3s;}
+#ans-input{width:100%;padding:12px;margin-top:12px;border:1px solid #ccc;border-radius:8px;font-size:16px;background:inherit;color:inherit}
+.result{margin-top:12px;font-weight:bold;font-size:17px}
+.tag-master{background:#38a169;color:white;padding:3px 6px;border-radius:4px;font-size:12px;margin-left:6px}
+</style>
+</head>
+<body>
+<h1>英语单词背诵</h1>
+<div class="tab-group">
+  <button class="tab active" data-type="month">月份(1-12月)</button>
+  <button class="tab" data-type="week">星期</button>
+  <button class="tab" data-type="season">季节</button>
+</div>
+
+<div class="btns">
+  <button id="toggle-cn">显示/隐藏中文释义</button>
+  <button id="shuffle-list">打乱单词顺序</button>
+  <button id="export-txt">导出单词文本</button>
+  <button id="toggle-dark">深色/浅色切换</button>
+  <button id="random-question">随机自测</button>
+</div>
+
+<div class="card hide-cn">
+  <div id="word-list"></div>
+</div>
+
+<div class="question-area">
+  <h3>自测题</h3>
+  <p id="q-text"></p>
+  <input type="text" id="ans-input" placeholder="输入英文答案">
+  <button id="check-btn">提交答案</button>
+  <div class="result" id="res-text"></div>
+</div>
+
+<script>
+//单词库
+const wordData = {
+  month:[
+    {en:"January",phonetic:"/ˈdʒænjuəri/",cn:"一月"},
+    {en:"February",phonetic:"/ˈfebruəri/",cn:"二月"},
+    {en:"March",phonetic:"/mɑːtʃ/",cn:"三月"},
+    {en:"April",phonetic:"/ˈeɪprəl/",cn:"四月"},
+    {en:"May",phonetic:"/meɪ/",cn:"五月"},
+    {en:"June",phonetic:"/dʒuːn/",cn:"六月"},
+    {en:"July",phonetic:"/dʒuˈlaɪ/",cn:"七月"},
+    {en:"August",phonetic:"/ˈɔːɡəst/",cn:"八月"},
+    {en:"September",phonetic:"/sepˈtembə/",cn:"九月"},
+    {en:"October",phonetic:"/ɒkˈtəʊbə/",cn:"十月"},
+    {en:"November",phonetic:"/nəʊˈvembə/",cn:"十一月"},
+    {en:"December",phonetic:"/dɪˈsembə/",cn:"十二月"},
+  ],
+  week:[
+    {en:"Monday",phonetic:"/ˈmʌndeɪ/",cn:"星期一"},
+    {en:"Tuesday",phonetic:"/ˈtjuːzdeɪ/",cn:"星期二"},
+    {en:"Wednesday",phonetic:"/ˈwenzdeɪ/",cn:"星期三"},
+    {en:"Thursday",phonetic:"/ˈθɜːzdeɪ/",cn:"星期四"},
+    {en:"Friday",phonetic:"/ˈfraɪdeɪ/",cn:"星期五"},
+    {en:"Saturday",phonetic:"/ˈsætədeɪ/",cn:"星期六"},
+    {en:"Sunday",phonetic:"/ˈsʌndeɪ/",cn:"星期日"},
+  ],
+  season:[
+    {en:"Spring",phonetic:"/sprɪŋ/",cn:"春天"},
+    {en:"Summer",phonetic:"/ˈsʌmə/",cn:"夏天"},
+    {en:"Autumn",phonetic:"/ˈɔːtəm/",cn:"秋天"},
+    {en:"Winter",phonetic:"/ˈwɪntə/",cn:"冬天"},
+  ]
+};
+
+//记忆状态：记录每个单词是否掌握
+let memoryStatus = {};
+Object.keys(wordData).forEach(type=>{
+  memoryStatus[type] = wordData[type].map(()=>false);
+})
+
+let currentType = "month";
+let currentQ = null;
+let isShuffle = false;
+const listEl = document.getElementById("word-list");
+const toggleCnBtn = document.getElementById("toggle-cn");
+const cardWrap = document.querySelector(".card");
+const tabs = document.querySelectorAll(".tab");
+const qText = document.getElementById("q-text");
+const ansInput = document.getElementById("ans-input");
+const checkBtn = document.getElementById("check-btn");
+const resText = document.getElementById("res-text");
+const randomQBtn = document.getElementById("random-question");
+const shuffleBtn = document.getElementById("shuffle-list");
+const exportBtn = document.getElementById("export-txt");
+const darkBtn = document.getElementById("toggle-dark");
+
+// 数组打乱函数 Fisher-Yates
+function shuffle(arr){
+  const copy = [...arr];
+  for(let i=copy.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [copy[i],copy[j]] = [copy[j],copy[i]];
+  }
+  return copy;
+}
+
+//渲染单词列表
+function render(type){
+  let arr = wordData[type];
+  let statusArr = memoryStatus[type];
+  let idxMap = arr.map((_,i)=>i);
+  if(isShuffle){
+    idxMap = shuffle(idxMap);
+  }
+  listEl.innerHTML = "";
+  idxMap.forEach(originalIdx=>{
+    const item = arr[originalIdx];
+    const mastered = statusArr[originalIdx];
+    const div = document.createElement("div");
+    div.className = "word-item";
+    div.innerHTML = `
+    <div class="word-left">
+      <span class="en" data-word="${item.en}">${item.en}</span>
+      <span class="phonetic">${item.phonetic}</span>
+      ${mastered ? '<span class="tag-master">✅已掌握</span>' : ''}
+      <span class="cn">${item.cn}</span>
+    </div>
+    <div>
+      <button class="mark-btn" data-idx="${originalIdx}">标记掌握</button>
+      <button class="reset-mark" data-idx="${originalIdx}">重置</button>
+    </div>`;
+    listEl.appendChild(div);
+  })
+  //绑定朗读事件
+  document.querySelectorAll(".en").forEach(el=>{
+    el.onclick = ()=>{
+      const utter = new SpeechSynthesisUtterance(el.dataset.word);
+      utter.lang = "en-US";
+      speechSynthesis.speak(utter);
+    }
+  })
+  //标记掌握
+  document.querySelectorAll(".mark-btn").forEach(el=>{
+    el.onclick = ()=>{
+      const i = Number(el.dataset.idx);
+      memoryStatus[currentType][i] = true;
+      render(currentType);
+    }
+  })
+  document.querySelectorAll(".reset-mark").forEach(el=>{
+    el.onclick = ()=>{
+      const i = Number(el.dataset.idx);
+      memoryStatus[currentType][i] = false;
+      render(currentType);
+    }
+  })
+}
+
+//切换标签
+tabs.forEach(tab=>{
+  tab.onclick = ()=>{
+    tabs.forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");
+    currentType = tab.dataset.type;
+    render(currentType);
+  }
+})
+
+//显示隐藏中文
+toggleCnBtn.onclick = ()=>{
+  cardWrap.classList.toggle("hide-cn");
+}
+
+//打乱单词
+shuffleBtn.onclick = ()=>{
+  isShuffle = !isShuffle;
+  render(currentType);
+  shuffleBtn.innerText = isShuffle ? "恢复顺序" : "打乱单词顺序";
+}
+
+//导出单词文本
+exportBtn.onclick = ()=>{
+  const arr = wordData[currentType];
+  let text = "";
+  arr.forEach(w=>{
+    text += `${w.en} ${w.phonetic} ${w.cn}\n`;
+  })
+  const blob = new Blob([text],{type:"text/plain"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${currentType}单词表.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+//深色浅色切换
+darkBtn.onclick = ()=>{
+  document.body.classList.toggle("dark");
+}
+
+//随机出题
+randomQBtn.onclick = ()=>{
+  const arr = wordData[currentType];
+  const rand = arr[Math.floor(Math.random()*arr.length)];
+  currentQ = rand;
+  qText.innerText = `中文：${rand.cn}，请写出英文：`;
+  ansInput.value = "";
+  resText.innerText = "";
+}
+
+//校验答案
+checkBtn.onclick = ()=>{
+  if(!currentQ){
+    resText.innerText="请先点击【随机自测】出题！";
+    resText.style.color="#e53e3e";
+    return;
+  }
+  const userAns = ansInput.value.trim().toLowerCase();
+  const realAns = currentQ.en.toLowerCase();
+  if(userAns === realAns){
+    resText.innerText="✅ 回答正确！";
+    resText.style.color="#38a169";
+  }else{
+    resText.innerText=`❌ 错误，正确答案：${currentQ.en}`;
+    resText.style.color="#e53e3e";
+  }
+}
+
+//初始化
+render(currentType);
+</script>
+</body>
 </html>
