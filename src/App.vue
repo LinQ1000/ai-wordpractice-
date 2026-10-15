@@ -1,16 +1,25 @@
-<script setup>
-import { ref } from "vue";
-import Study from "./Study.vue";
-
-const currentPage = ref("home");
-
-function startStudy() {
-  currentPage.value = "study";
-}
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import Study from './Study.vue';
+import { records, today, activities, learnedWords, accuracy, studiedToday, minutesToday, streak, batchSize, saveSettings, storageWarning, type Mode } from './stores/learning';
+const currentPage = ref<'home' | 'study' | 'stats' | 'settings'>('home');
+const mode = ref<Mode>('study');
+const clock = ref(Date.now());
+let timer: ReturnType<typeof setInterval>;
+onMounted(() => { timer = setInterval(() => { clock.value = Date.now(); }, 30000); });
+onUnmounted(() => clearInterval(timer));
+const todayWords = computed(() => Object.values(records.value).filter(p => p.due <= clock.value).length);
+const mistakes = computed(() => Object.values(records.value).filter(p => p.difficult || p.repetitions === 0).length);
+const goalProgress = computed(() => Math.min(100, Math.round(studiedToday.value / batchSize.value * 100)));
+const settingSize = ref(batchSize.value);
+const settingsMessage = ref('');
+function applySettings() { settingsMessage.value = saveSettings(settingSize.value) ? '设置已保存，下次练习生效。' : '请填写 5–100 之间的整数，并确认浏览器允许保存数据。'; }
+function goHome() { currentPage.value = 'home'; clock.value = Date.now(); }
+function startStudy(value: Mode = 'study') { mode.value = value; currentPage.value = 'study'; }
 </script>
 
 <template>
-  <Study v-if="currentPage === 'study'" />
+  <Study v-if="currentPage === 'study'" :mode="mode" @back="goHome" />
 
   <div v-else class="app">
     <!-- 左侧菜单 -->
@@ -24,36 +33,38 @@ function startStudy() {
       </div>
 
       <nav>
+        <a class="nav-item" href="/ielts/index.html">🎓 IELTS 综合练习</a>
+        <a class="nav-item" href="/original-word-practice.html">📅 基础词汇练习</a>
         <div class="nav-title">学习</div>
 
-        <a class="nav-item active">
+        <a class="nav-item" :class="{ active: currentPage === 'home' }" href="#home" @click.prevent="goHome">
           <span>🏠</span>
           首页
         </a>
 
-        <a class="nav-item">
+        <a class="nav-item" href="#study" @click.prevent="startStudy()">
           <span>📖</span>
           背单词
         </a>
 
-        <a class="nav-item">
+        <a class="nav-item" href="#" @click.prevent="startStudy('review')">
           <span>🔄</span>
           智能复习
         </a>
 
-        <a class="nav-item">
+        <a class="nav-item" href="#" @click.prevent="startStudy('mistakes')">
           <span>❌</span>
           错题本
         </a>
 
         <div class="nav-title">数据</div>
 
-        <a class="nav-item">
+        <a class="nav-item" href="#" @click.prevent="currentPage = 'stats'">
           <span>📊</span>
           学习统计
         </a>
 
-        <a class="nav-item">
+        <a class="nav-item" href="#" @click.prevent="currentPage = 'settings'">
           <span>⚙️</span>
           设置
         </a>
@@ -75,7 +86,7 @@ function startStudy() {
       <!-- 顶部 -->
       <header class="header">
         <div>
-          <p class="welcome">Good Evening 👋</p>
+          <p class="welcome">今天也进步一点 👋</p>
           <h1>准备好学习了吗？</h1>
         </div>
 
@@ -88,6 +99,16 @@ function startStudy() {
         </div>
       </header>
 
+      <p v-if="storageWarning" role="alert">{{ storageWarning }}</p>
+      <div class="mobile-actions"><button @click="goHome">首页</button><button @click="startStudy('review')">复习</button><button @click="startStudy('mistakes')">错词</button><button @click="currentPage = 'stats'">统计</button><button @click="currentPage = 'settings'">设置</button><a href="/ielts/index.html">IELTS</a></div>
+      <section v-if="currentPage === 'settings'" class="panel">
+        <h3>学习设置</h3><p>每组优先安排到期词，再补充新词。</p>
+        <form @submit.prevent="applySettings"><label for="batch-size">每组单词数量（5–100）</label> <input id="batch-size" v-model.number="settingSize" type="number" min="5" max="100" step="1" required><button class="show-control" type="submit">保存设置</button></form><p role="status">{{ settingsMessage }}</p>
+      </section>
+      <section v-else-if="currentPage === 'stats'" class="panel">
+        <h3>学习统计</h3><p>今日学习 {{ studiedToday }} 个不同单词，完成 {{ today.length }} 次评价，累计 {{ minutesToday }} 分钟。</p><p>认识率 {{ accuracy }}% · 连续学习 {{ streak }} 天 · 累计评价 {{ activities.length }} 次</p><p>已掌握 {{ learnedWords }} 词（连续选择“认识”至少 3 次），待复习 {{ todayWords }} 词，待巩固 {{ mistakes }} 词。</p><p>认识率来自自评；每词计时最多计入 5 分钟。旧记录未包含日期，不计入每日统计。</p>
+      </section>
+      <template v-else>
       <!-- 今日学习 -->
       <section class="hero-card">
         <div class="hero-left">
@@ -97,13 +118,13 @@ function startStudy() {
 
           <p>坚持每天学习一点点， 你的英语词汇量会越来越丰富。</p>
 
-          <button class="start-button">开始学习 →</button>
+          <button class="start-button" @click="startStudy()">开始学习 →</button>
         </div>
 
         <div class="progress-circle">
           <div class="circle">
-            <strong>72%</strong>
-            <span>完成度</span>
+            <strong>{{ goalProgress }}%</strong>
+            <span>今日目标</span>
           </div>
         </div>
       </section>
@@ -115,16 +136,16 @@ function startStudy() {
           <div>
             <span>已掌握词汇</span>
             <strong>{{ learnedWords }}</strong>
-            <small>+12 本周</small>
+            <small>累计掌握</small>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon orange">🎯</div>
           <div>
-            <span>今日正确率</span>
+            <span>今日认识率</span>
             <strong>{{ accuracy }}%</strong>
-            <small>+4% 比昨天</small>
+            <small>依据学习自评</small>
           </div>
         </div>
 
@@ -132,7 +153,7 @@ function startStudy() {
           <div class="stat-icon green">⏱️</div>
           <div>
             <span>学习时间</span>
-            <strong>42 min</strong>
+            <strong>{{ minutesToday }} min</strong>
             <small>今天</small>
           </div>
         </div>
@@ -157,77 +178,29 @@ function startStudy() {
               <h3>今日学习任务</h3>
             </div>
 
-            <span class="more">查看全部 →</span>
           </div>
-
-          <div class="task">
-            <div class="task-icon">📖</div>
-
-            <div class="task-info">
-              <strong>新单词</strong>
-              <span>学习 20 个新单词</span>
-
-              <div class="bar">
-                <div class="bar-progress" style="width: 65%"></div>
-              </div>
-            </div>
-
-            <span class="task-number">13 / 20</span>
-          </div>
-
-          <div class="task">
-            <div class="task-icon">🔄</div>
-
-            <div class="task-info">
-              <strong>间隔复习</strong>
-              <span>复习 12 个单词</span>
-
-              <div class="bar">
-                <div
-                  class="bar-progress green-progress"
-                  style="width: 40%"
-                ></div>
-              </div>
-            </div>
-
-            <span class="task-number">5 / 12</span>
-          </div>
-
-          <div class="task">
-            <div class="task-icon">🧠</div>
-
-            <div class="task-info">
-              <strong>AI 练习</strong>
-              <span>AI 生成情景练习</span>
-
-              <div class="bar">
-                <div
-                  class="bar-progress purple-progress"
-                  style="width: 20%"
-                ></div>
-              </div>
-            </div>
-
-            <span class="task-number">1 / 5</span>
-          </div>
+          <button class="task task-action" @click="startStudy()"><span>📖</span><span class="task-info"><strong>今日学习</strong><span>已学 {{ studiedToday }} / 目标 {{ batchSize }} 词</span><span class="bar"><span class="bar-progress" :style="{ width: goalProgress + '%', display: 'block' }"></span></span></span></button>
+          <button class="task task-action" @click="startStudy('review')"><span>🔄</span><span class="task-info"><strong>间隔复习</strong><span>{{ todayWords }} 个到期单词</span></span><span>开始 →</span></button>
+          <button class="task task-action" @click="startStudy('mistakes')"><span>🧠</span><span class="task-info"><strong>错词巩固</strong><span>{{ mistakes }} 个不认识或模糊的单词</span></span><span>开始 →</span></button>
         </div>
 
         <!-- AI 助手 -->
         <div class="ai-panel">
           <div class="ai-icon">✨</div>
 
-          <span class="ai-label">AI LEARNING ASSISTANT</span>
+          <span class="ai-label">IELTS VOCABULARY</span>
 
-          <h3>让 AI 帮你记住单词</h3>
+          <h3>用例句理解，用复习记牢</h3>
 
           <p>
-            不只是告诉你单词的意思， AI 会根据你的学习情况生成
-            例句、记忆技巧和个性化练习。
+            学习 3,610 个 IELTS 核心词汇，通过释义、例句和朗读积累词汇。
+            根据每次自评安排复习，不认识的单词进入错词巩固。
           </p>
 
-          <button class="start-button" @click="startStudy">开始学习 →</button>
+          <button class="start-button" @click="startStudy()">开始学习 →</button>
         </div>
       </section>
+      </template>
     </main>
   </div>
 </template>
@@ -860,4 +833,14 @@ button {
     grid-template-columns: 1fr;
   }
 }
+</style>
+
+<style scoped>
+.task-action { width: 100%; background: transparent; border-right: 0; border-left: 0; border-bottom: 0; text-align: left; color: inherit; }
+.task-action:hover { background: #f7f8fc; }
+.show-control, .mobile-actions button { border: 0; border-radius: 8px; padding: 10px 14px; background: #5b5ce2; color: white; }
+.panel p { margin: 14px 0; line-height: 1.8; }
+input { max-width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
+.mobile-actions { display: none; }
+@media (max-width: 700px) { .mobile-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; } }
 </style>

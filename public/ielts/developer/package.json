@@ -1,0 +1,14 @@
+{
+  "name": "ielts-practice-developer",
+  "version": "0.6.2-fix",
+  "description": "Development and testing dependencies for IELTS Practice",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 \"tests/js/**/*.test.js\"",
+    "test:unit": "node --test --test-concurrency=1 \"tests/js/**/*.test.js\""
+  }
+}

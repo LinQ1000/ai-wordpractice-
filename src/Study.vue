@@ -1,137 +1,53 @@
-<script setup>
-import { ref, computed } from "vue";
-
-const words = [
-  {
-    word: "abandon",
-    phonetic: "/əˈbændən/",
-    meaning: "放弃；抛弃",
-    example: "Don't abandon your dreams.",
-    translation: "不要放弃你的梦想。",
-    level: "CET-4",
-    interval: 1,
-    repetitions: 0,
-  },
-  {
-    word: "accurate",
-    phonetic: "/ˈækjərət/",
-    meaning: "准确的；精确的",
-    example: "The information must be accurate.",
-    translation: "这些信息必须是准确的。",
-    level: "CET-4",
-    interval: 1,
-    repetitions: 0,
-  },
-  {
-    word: "benefit",
-    phonetic: "/ˈbenɪfɪt/",
-    meaning: "好处；受益",
-    example: "Exercise has many health benefits.",
-    translation: "运动对健康有很多好处。",
-    level: "CET-4",
-    interval: 1,
-    repetitions: 0,
-  },
-  {
-    word: "complex",
-    phonetic: "/ˈkɑːmpleks/",
-    meaning: "复杂的；复杂系统",
-    example: "This is a complex problem.",
-    translation: "这是一个复杂的问题。",
-    level: "CET-4",
-    interval: 1,
-    repetitions: 0,
-  },
-  {
-    word: "efficient",
-    phonetic: "/ɪˈfɪʃənt/",
-    meaning: "高效的；有效率的",
-    example: "She is an efficient worker.",
-    translation: "她是一名高效的工作人员。",
-    level: "CET-4",
-    interval: 1,
-    repetitions: 0,
-  },
-];
-
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import basic from './data/basic.json';
+import { selectWords, recordAnswer, storageWarning, type Word, type Mode, type Rating } from './stores/learning';
+const props = defineProps<{ mode: Mode }>();
+const emit = defineEmits<{ back: [] }>();
+const titles = { study: '今日单词', review: '到期复习', mistakes: '错词巩固' };
+const words = ref<Word[]>([]);
+type WordList = 'ielts' | 'month' | 'week' | 'season';
+const wordList = ref<WordList>('ielts');
+const listNames = { ielts: 'IELTS 核心词汇', month: '基础 · 月份', week: '基础 · 星期', season: '基础 · 季节' };
+const includeLearned = ref(false);
 const currentIndex = ref(0);
 const showAnswer = ref(false);
 const completed = ref(0);
-
-const currentWord = computed(() => {
-  return words[currentIndex.value];
-});
-
-const progress = computed(() => {
-  return Math.round((completed.value / words.length) * 100);
-});
-
-function showWordAnswer() {
-  showAnswer.value = true;
+const loading = ref(true);
+const error = ref('');
+const recognized = ref(0);
+let started = Date.now();
+const finished = computed(() => !loading.value && words.value.length > 0 && completed.value >= words.value.length);
+const currentWord = computed(() => words.value[currentIndex.value]);
+const progress = computed(() => words.value.length ? Math.round(completed.value / words.value.length * 100) : 0);
+async function load() {
+  loading.value = true; error.value = ''; completed.value = 0; currentIndex.value = 0; recognized.value = 0; showAnswer.value = false;
+  try {
+    let data: Word[];
+    if (wordList.value === 'ielts') {
+      const response = await fetch('/ielts/assets/wordlists/ielts_core.json');
+      if (!response.ok) throw new Error();
+      data = await response.json();
+    } else { data = basic[wordList.value]; }
+    words.value = includeLearned.value && props.mode === 'study' ? data : selectWords(data, props.mode); started = Date.now();
+  } catch { error.value = '词库加载失败，请检查网络后重试。'; }
+  finally { loading.value = false; }
 }
-function answer(type) {
-  const word = words[currentIndex.value];
-
-  // 不认识
-  if (type === "hard") {
-    word.interval = 0;
-
-    word.repetitions = 0;
-
-    console.log(`${word.word}：不认识，下次尽快复习`);
-  }
-
-  // 模糊
-  if (type === "normal") {
-    word.interval = 1;
-
-    console.log(`${word.word}：模糊，1天后复习`);
-  }
-
-  // 认识
-  if (type === "easy") {
-    word.repetitions++;
-
-    /*
-     * 简化版 SRS 算法
-     *
-     * 第一次：1天
-     * 第二次：3天
-     * 第三次：7天
-     * 第四次：14天
-     * 第五次：30天
-     */
-
-    const intervals = [1, 3, 7, 14, 30];
-
-    const index = Math.min(word.repetitions - 1, intervals.length - 1);
-
-    word.interval = intervals[index];
-
-    console.log(`${word.word}：认识，下次 ${word.interval} 天后复习`);
-  }
-
-  completed.value++;
-
-  // 下一个单词
-  if (currentIndex.value < words.length - 1) {
-    currentIndex.value++;
-
-    showAnswer.value = false;
-  } else {
-    alert("🎉 今天的学习任务完成了！");
-  }
+onMounted(load);
+onUnmounted(() => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); });
+function showWordAnswer() { showAnswer.value = true; }
+function answer(type: Rating) {
+  if (finished.value || !showAnswer.value || !currentWord.value) return;
+  recordAnswer(currentWord.value.word, type, (Date.now()-started)/1000);
+  if (type === 'easy') recognized.value++;
+  completed.value++; showAnswer.value = false; started = Date.now();
+  if (!finished.value) currentIndex.value++;
 }
-
 function speak() {
-  const text = currentWord.value.word;
-
-  if ("speechSynthesis" in window) {
-    const speech = new SpeechSynthesisUtterance(text);
-
-    speech.lang = "en-US";
-    speech.rate = 0.8;
-
+  if (currentWord.value && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const speech = new SpeechSynthesisUtterance(currentWord.value.word);
+    speech.lang = 'en-US'; speech.rate = 0.8;
     window.speechSynthesis.speak(speech);
   }
 }
@@ -141,16 +57,20 @@ function speak() {
   <div class="study-page">
     <!-- 顶部 -->
     <header class="study-header">
-      <button class="back-button">← 返回</button>
+      <button class="back-button" @click="emit('back')">← 返回</button>
 
       <div class="header-title">
         <span>AI VOCABULARY</span>
-        <h1>今日单词</h1>
+        <h1>{{ titles[mode] }}</h1>
       </div>
 
       <div class="progress-text">{{ completed }} / {{ words.length }}</div>
     </header>
 
+    <div class="wordlist-controls"><label for="wordlist">选择词库</label>
+      <select id="wordlist" v-model="wordList" :disabled="loading" @change="load"><option v-for="(name, key) in listNames" :key="key" :value="key">{{ name }}</option></select>
+      <label v-if="mode === 'study'"><input v-model="includeLearned" type="checkbox" :disabled="loading" @change="load"> 全词库练习（含已学）</label>
+    </div>
     <!-- 进度条 -->
     <div class="progress-container">
       <div class="progress-bar">
@@ -160,11 +80,17 @@ function speak() {
       <span>{{ progress }}%</span>
     </div>
 
+    <p v-if="storageWarning" role="status">{{ storageWarning }}</p>
+    <main v-if="loading" class="study-content">正在加载 IELTS 词库…</main>
+    <main v-else-if="error" class="study-content" role="alert">{{ error }} <button class="show-button" @click="load">重新加载</button></main>
+    <main v-else-if="finished || !words.length" class="study-content">
+      <div class="word-card"><h2>{{ finished ? '学习完成！' : '暂时没有待学单词' }}</h2><p>本次完成 {{ completed }} 个单词，认识 {{ recognized }} 个。</p><p v-if="!words.length">可以返回首页学习新词，或稍后再来复习。</p><button v-if="finished" class="show-button" @click="load">继续下一组</button> <button class="show-button" @click="emit('back')">返回首页</button></div>
+    </main>
     <!-- 单词卡片 -->
-    <main class="study-content">
+    <main v-else-if="currentWord" class="study-content">
       <div class="word-card">
         <div class="word-level">
-          {{ currentWord.level }}
+          {{ listNames[wordList] }}
         </div>
 
         <h2>
@@ -197,20 +123,10 @@ function speak() {
               {{ currentWord.example }}
             </p>
 
-            <span>
-              {{ currentWord.translation }}
-            </span>
+
           </div>
 
-          <div class="ai-tip">
-            <span>✨ AI 记忆提示</span>
 
-            <p>
-              想象你正在放弃一件重要的事情， 把它彻底“扔掉”，这就是
-              <strong>{{ currentWord.word }}</strong
-              >。
-            </p>
-          </div>
         </div>
       </div>
 
@@ -219,19 +135,19 @@ function speak() {
         <button class="answer-button hard" @click="answer('hard')">
           <span>😵</span>
           <strong>不认识</strong>
-          <small>很难</small>
+          <small>1 分钟后复习</small>
         </button>
 
         <button class="answer-button normal" @click="answer('normal')">
           <span>🤔</span>
           <strong>模糊</strong>
-          <small>需要复习</small>
+          <small>1 天后复习</small>
         </button>
 
         <button class="answer-button easy" @click="answer('easy')">
           <span>😎</span>
           <strong>认识</strong>
-          <small>记住了</small>
+          <small>延长复习间隔</small>
         </button>
       </div>
     </main>
@@ -615,4 +531,9 @@ function speak() {
     grid-template-columns: 1fr;
   }
 }
+</style>
+
+<style scoped>
+.wordlist-controls { max-width: 1050px; margin: 24px auto; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+select { padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: white; }
 </style>

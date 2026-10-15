@@ -1,0 +1,123 @@
+{
+  "month": [
+    {
+      "word": "January",
+      "meaning": "一月",
+      "phonetic": "/ˈdʒænjuəri/"
+    },
+    {
+      "word": "February",
+      "meaning": "二月",
+      "phonetic": "/ˈfebruəri/"
+    },
+    {
+      "word": "March",
+      "meaning": "三月",
+      "phonetic": "/mɑːtʃ/"
+    },
+    {
+      "word": "April",
+      "meaning": "四月",
+      "phonetic": "/ˈeɪprəl/"
+    },
+    {
+      "word": "May",
+      "meaning": "五月",
+      "phonetic": "/meɪ/"
+    },
+    {
+      "word": "June",
+      "meaning": "六月",
+      "phonetic": "/dʒuːn/"
+    },
+    {
+      "word": "July",
+      "meaning": "七月",
+      "phonetic": "/dʒuˈlaɪ/"
+    },
+    {
+      "word": "August",
+      "meaning": "八月",
+      "phonetic": "/ˈɔːɡəst/"
+    },
+    {
+      "word": "September",
+      "meaning": "九月",
+      "phonetic": "/sepˈtembə/"
+    },
+    {
+      "word": "October",
+      "meaning": "十月",
+      "phonetic": "/ɒkˈtəʊbə/"
+    },
+    {
+      "word": "November",
+      "meaning": "十一月",
+      "phonetic": "/nəʊˈvembə/"
+    },
+    {
+      "word": "December",
+      "meaning": "十二月",
+      "phonetic": "/dɪˈsembə/"
+    }
+  ],
+  "week": [
+    {
+      "word": "Monday",
+      "meaning": "星期一",
+      "phonetic": "/ˈmʌndeɪ/"
+    },
+    {
+      "word": "Tuesday",
+      "meaning": "星期二",
+      "phonetic": "/ˈtjuːzdeɪ/"
+    },
+    {
+      "word": "Wednesday",
+      "meaning": "星期三",
+      "phonetic": "/ˈwenzdeɪ/"
+    },
+    {
+      "word": "Thursday",
+      "meaning": "星期四",
+      "phonetic": "/ˈθɜːzdeɪ/"
+    },
+    {
+      "word": "Friday",
+      "meaning": "星期五",
+      "phonetic": "/ˈfraɪdeɪ/"
+    },
+    {
+      "word": "Saturday",
+      "meaning": "星期六",
+      "phonetic": "/ˈsætədeɪ/"
+    },
+    {
+      "word": "Sunday",
+      "meaning": "星期日",
+      "phonetic": "/ˈsʌndeɪ/"
+    }
+  ],
+  "season": [
+    {
+      "word": "Spring",
+      "meaning": "春天",
+      "phonetic": "/sprɪŋ/"
+    },
+    {
+      "word": "Summer",
+      "meaning": "夏天",
+      "phonetic": "/ˈsʌmə/"
+    },
+    {
+      "word": "Autumn",
+      "meaning": "秋天",
+      "phonetic": "/ˈɔːtəm/"
+    },
+    {
+      "word": "Winter",
+      "meaning": "冬天",
+      "phonetic": "/ˈwɪntə/"
+    }
+  ]
+}
