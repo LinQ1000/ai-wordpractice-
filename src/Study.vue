@@ -1,101 +1,201 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import basic from './data/basic.json';
 import { matchesSpelling, spellingRating } from './lib/spelling';
+import { parseStudyPreferences, parseStudyDraft, studyDraftKey, type WordList, type Exercise, type StudyPreferences, type StudyDraft, type PendingAnswer } from './lib/studySession';
 import { selectWords, recordAnswer, storageWarning, batchSize, type Word, type Mode, type Rating } from './stores/learning';
 const props = defineProps<{ mode: Mode }>();
 const emit = defineEmits<{ back: [] }>();
 const titles = { study: '今日单词', review: '到期复习', mistakes: '错词巩固' };
-const words = ref<Word[]>([]);
-type WordList = 'ielts' | 'month' | 'week' | 'season';
-const wordList = ref<WordList>('ielts');
 const listNames = { ielts: 'IELTS 核心词汇', month: '基础 · 月份', week: '基础 · 星期', season: '基础 · 季节' };
+const words = ref<Word[]>([]);
+const wordList = ref<WordList>('ielts');
 const includeLearned = ref(false);
-const exercise = ref<'spelling' | 'meaning'>('spelling');
+const exercise = ref<Exercise>('spelling');
 const typedWord = ref('');
 const spellingInput = ref<HTMLInputElement | null>(null);
+const wordCard = ref<HTMLElement | null>(null);
 const attempts = ref(0);
 const revealed = ref(false);
 const spellingCorrect = ref(false);
 const feedback = ref('');
 const firstTryCorrect = ref(0);
 const spellingCompleted = ref(0);
-function resetSpelling() {
-  typedWord.value = ''; attempts.value = 0; revealed.value = false;
-  spellingCorrect.value = false; feedback.value = ''; showAnswer.value = false;
-  nextTick(() => spellingInput.value?.focus());
-}
-function changeExercise() { resetSpelling(); }
-function checkSpelling() {
-  if (!currentWord.value || spellingCorrect.value || finished.value) return;
-  if (!typedWord.value.trim()) { feedback.value = '请先输入单词。'; return; }
-  attempts.value++;
-  spellingCorrect.value = matchesSpelling(typedWord.value, currentWord.value.word);
-  feedback.value = spellingCorrect.value ? '拼写正确！点击下一词继续。' : '还差一点，请检查拼写后再试一次。';
-  if (spellingCorrect.value) showAnswer.value = true;
-  else nextTick(() => { spellingInput.value?.focus(); spellingInput.value?.select(); });
-}
-function revealSpelling() {
-  revealed.value = true;
-  feedback.value = '看清单词后，请亲手输入一遍；本词会安排尽快复习。';
-  nextTick(() => spellingInput.value?.focus());
-}
-function nextSpelling() {
-  if (!spellingCorrect.value) return;
-  const rating = spellingRating(attempts.value, revealed.value);
-  spellingCompleted.value++;
-  if (rating === 'easy') firstTryCorrect.value++;
-  answer(rating);
-}
-const currentIndex = ref(0);
 const showAnswer = ref(false);
 const completed = ref(0);
 const loading = ref(true);
 const error = ref('');
 const recognized = ref(0);
+const sessionNotice = ref('');
+const saveError = ref('');
+const speechNotice = ref('');
+const pending = ref<PendingAnswer>();
+let sessionId = '';
+let activeKey = '';
 let started = Date.now();
+let elapsedSeconds = 0;
+let restoring = false;
+let loadVersion = 0;
+let answerLocked = false;
+let speechVersion = 0;
+const preferencesKey = () => `ai-vocabulary-study-preferences:${props.mode}`;
+const settings = (): StudyPreferences => ({ wordList: wordList.value, exercise: exercise.value, includeLearned: props.mode === 'study' && includeLearned.value });
 const finished = computed(() => !loading.value && words.value.length > 0 && completed.value >= words.value.length);
-const currentWord = computed(() => words.value[currentIndex.value]);
+const currentWord = computed(() => words.value[completed.value]);
 const progress = computed(() => words.value.length ? Math.round(completed.value / words.value.length * 100) : 0);
-async function load() {
-  loading.value = true; error.value = ''; completed.value = 0; currentIndex.value = 0; recognized.value = 0; firstTryCorrect.value = 0; spellingCompleted.value = 0; resetSpelling();
+const emptyCopy = computed(() => props.mode === 'review'
+  ? { title: '这份词库暂时没有到期单词', text: '已学单词会在到期后出现。你可以切换词库查看，或返回首页学习新词。' }
+  : props.mode === 'mistakes'
+    ? { title: '这份词库暂时没有错词', text: '不认识、模糊或查看答案后拼对的单词会进入错词巩固。可以切换词库，或返回首页继续学习。' }
+    : { title: '这份词库暂时没有待学单词', text: '可以勾选“包含已学词”再练一次，切换其他词库，或返回首页。' });
+function cancelSpeech() { speechVersion++; if ('speechSynthesis' in window) window.speechSynthesis.cancel(); }
+function resetSpelling() {
+  typedWord.value = ''; attempts.value = 0; revealed.value = false;
+  spellingCorrect.value = false; feedback.value = ''; showAnswer.value = false; speechNotice.value = '';
+  nextTick(() => { if (!finished.value) { if (exercise.value === 'spelling') spellingInput.value?.focus(); else wordCard.value?.focus(); } });
+}
+function savePreferences() {
+  try { localStorage.setItem(preferencesKey(), JSON.stringify(settings())); }
+  catch { saveError.value = '浏览器无法保存练习偏好，退出后可能无法恢复。'; }
+}
+function restorePreferences() {
+  try {
+    const value = parseStudyPreferences(JSON.parse(localStorage.getItem(preferencesKey()) || 'null'));
+    if (value) { wordList.value = value.wordList; exercise.value = value.exercise; includeLearned.value = props.mode === 'study' && value.includeLearned; }
+  } catch { sessionNotice.value = '练习偏好无法读取，已使用默认设置。'; }
+}
+function snapshot(): StudyDraft {
+  return { version: 1, mode: props.mode, ...settings(), sessionId, wordIds: words.value.map(word => word.word), completed: completed.value, recognized: recognized.value, spellingCompleted: spellingCompleted.value, firstTryCorrect: firstTryCorrect.value, typedWord: typedWord.value, attempts: attempts.value, revealed: revealed.value, spellingCorrect: spellingCorrect.value, showAnswer: showAnswer.value, elapsedSeconds: Math.min(300, elapsedSeconds + Math.max(0, (Date.now()-started)/1000)), ...(pending.value ? { pending: pending.value } : {}) };
+}
+function saveSession() {
+  if (restoring || loading.value || !activeKey || !words.value.length) return;
+  try { localStorage.setItem(activeKey, JSON.stringify(snapshot())); saveError.value = ''; }
+  catch { saveError.value = '本次输入未能保存，请保留页面；浏览器存储空间可能不足。'; }
+}
+watch([typedWord, attempts, revealed, spellingCorrect, showAnswer], saveSession, { flush: 'sync' });
+function applyPending() {
+  const submission = pending.value;
+  if (!submission || submission.word !== currentWord.value?.word) return;
+  recordAnswer(submission.word, submission.rating, submission.seconds, submission.at, submission.id);
+  if (submission.rating === 'easy') recognized.value++;
+  if (submission.exercise === 'spelling') {
+    spellingCompleted.value++;
+    if (submission.rating === 'easy') firstTryCorrect.value++;
+  }
+  completed.value++; pending.value = undefined; elapsedSeconds = 0; started = Date.now(); resetSpelling();
+}
+function restoreDraft(draft: StudyDraft, data: Word[]) {
+  const vocabulary = new Map(data.map(word => [word.word, word]));
+  words.value = draft.wordIds.map(word => vocabulary.get(word)!);
+  sessionId = draft.sessionId; completed.value = draft.completed; recognized.value = draft.recognized;
+  spellingCompleted.value = draft.spellingCompleted; firstTryCorrect.value = draft.firstTryCorrect;
+  typedWord.value = draft.typedWord; attempts.value = draft.attempts; revealed.value = draft.revealed;
+  spellingCorrect.value = draft.spellingCorrect; showAnswer.value = draft.showAnswer; elapsedSeconds = draft.elapsedSeconds;
+  pending.value = draft.pending; started = Date.now();
+  if (spellingCorrect.value) feedback.value = '已恢复拼写正确的单词，点击下一词即可继续，不会重复计分。';
+  else if (revealed.value) feedback.value = '已恢复查看答案的状态，请亲手输入一遍。';
+  else if (attempts.value) feedback.value = `已恢复本词 ${attempts.value} 次尝试，可以继续修改。`;
+  applyPending();
+}
+async function load(fresh = false) {
+  const version = ++loadVersion;
+  loading.value = true; error.value = ''; cancelSpeech(); speechNotice.value = '';
+  activeKey = '';
   try {
     let data: Word[];
     if (wordList.value === 'ielts') {
       const response = await fetch('/ielts/assets/wordlists/ielts_core.json');
       if (!response.ok) throw new Error();
-      data = await response.json();
-    } else { data = basic[wordList.value]; }
-    words.value = includeLearned.value && props.mode === 'study' ? data.slice(0, batchSize.value) : selectWords(data, props.mode); started = Date.now();
-  } catch { error.value = '词库加载失败，请检查网络后重试。'; }
-  finally { loading.value = false; nextTick(() => spellingInput.value?.focus()); }
-}
-onMounted(load);
-onUnmounted(() => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); });
-function showWordAnswer() { showAnswer.value = true; }
-function answer(type: Rating) {
-  if (finished.value || !showAnswer.value || !currentWord.value) return;
-  recordAnswer(currentWord.value.word, type, (Date.now()-started)/1000);
-  if (type === 'easy') recognized.value++;
-  completed.value++; showAnswer.value = false; started = Date.now();
-  if (!finished.value) currentIndex.value++;
-  resetSpelling();
-}
-function speak() {
-  if (currentWord.value && 'speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-    const speech = new SpeechSynthesisUtterance(currentWord.value.word);
-    speech.lang = 'en-US'; speech.rate = 0.8;
-    window.speechSynthesis.speak(speech);
+      const value: unknown = await response.json();
+      if (!Array.isArray(value) || !value.every(word => word && typeof word.word === 'string' && typeof word.meaning === 'string')) throw new Error();
+      data = value as Word[];
+    } else data = basic[wordList.value];
+    if (version !== loadVersion) return;
+    const key = studyDraftKey(props.mode, settings());
+    let draft: StudyDraft | undefined;
+    let invalidDraft = false;
+    if (!fresh) {
+      try { const raw = localStorage.getItem(key); if (raw) { draft = parseStudyDraft(JSON.parse(raw), props.mode, settings(), data); invalidDraft = !draft; } }
+      catch { invalidDraft = true; }
+    }
+    restoring = true;
+    if (draft) {
+      restoreDraft(draft, data);
+      sessionNotice.value = completed.value >= words.value.length ? '已恢复上次完成的小组。点击“继续下一组”开始新练习。' : `已恢复上次练习：完成 ${completed.value} / ${words.value.length} 词，输入与尝试次数已保留。`;
+    } else {
+      words.value = includeLearned.value && props.mode === 'study' ? data.slice(0, batchSize.value) : selectWords(data, props.mode);
+      completed.value = 0; recognized.value = 0; firstTryCorrect.value = 0; spellingCompleted.value = 0;
+      sessionId = crypto.randomUUID(); pending.value = undefined; elapsedSeconds = 0; started = Date.now(); resetSpelling();
+      sessionNotice.value = invalidDraft ? '上次练习数据不完整或词库已更新，已安全开始新组；已完成的学习记录仍保留。' : '输入与练习进度会自动保存；切换词库或练习方式后，切回来可接着练。';
+    }
+    activeKey = key;
+  } catch { if (version === loadVersion) error.value = '词库加载失败，请检查网络后重试。'; }
+  finally {
+    if (version === loadVersion) { restoring = false; loading.value = false; saveSession(); nextTick(() => { if (exercise.value === 'spelling') spellingInput.value?.focus(); else wordCard.value?.focus(); }); }
   }
 }
+function changeExercise(event: Event) {
+  saveSession(); exercise.value = (event.target as HTMLSelectElement).value as Exercise; savePreferences(); void load();
+}
+function changeWordList(event: Event) {
+  saveSession(); wordList.value = (event.target as HTMLSelectElement).value as WordList; savePreferences(); void load();
+}
+function changeIncludeLearned(event: Event) {
+  saveSession(); includeLearned.value = (event.target as HTMLInputElement).checked; savePreferences(); void load();
+}
+function checkSpelling() {
+  if (!currentWord.value || spellingCorrect.value || finished.value || loading.value) return;
+  if (!typedWord.value.trim()) { feedback.value = '请先输入单词。'; return; }
+  attempts.value++; spellingCorrect.value = matchesSpelling(typedWord.value, currentWord.value.word);
+  feedback.value = spellingCorrect.value ? '拼写正确！按 Enter 或点击下一词继续。' : '还差一点，请检查拼写后再试一次。';
+  if (spellingCorrect.value) showAnswer.value = true;
+  else nextTick(() => { spellingInput.value?.focus(); spellingInput.value?.select(); });
+  saveSession();
+}
+function revealSpelling() {
+  revealed.value = true; feedback.value = '看清单词后，请亲手输入一遍；本词会安排尽快复习。';
+  nextTick(() => spellingInput.value?.focus());
+}
+function nextSpelling() { if (spellingCorrect.value) answer(spellingRating(attempts.value, revealed.value)); }
+function showWordAnswer() { showAnswer.value = true; }
+function answer(type: Rating) {
+  if (answerLocked || loading.value || finished.value || !showAnswer.value || !currentWord.value) return;
+  answerLocked = true;
+  pending.value = { id: `${sessionId}:${completed.value}`, word: currentWord.value.word, rating: type, at: Date.now(), seconds: snapshot().elapsedSeconds, exercise: exercise.value };
+  saveSession(); restoring = true;
+  applyPending(); restoring = false; saveSession(); cancelSpeech();
+  // Prevent a queued double click from rating the next card.
+  nextTick(() => { answerLocked = false; });
+}
+function speak() {
+  if (!currentWord.value) return;
+  if (!('speechSynthesis' in window)) { speechNotice.value = '当前浏览器不支持朗读，可参考音标继续学习。'; return; }
+  cancelSpeech(); speechNotice.value = '';
+  const version = speechVersion;
+  try {
+    const speech = new SpeechSynthesisUtterance(currentWord.value.word);
+    speech.lang = 'en-US'; speech.rate = 0.8;
+    speech.onerror = event => { if (version === speechVersion && !['canceled', 'interrupted'].includes(event.error)) speechNotice.value = '朗读未能播放，请重试，或检查浏览器声音设置。'; };
+    window.speechSynthesis.speak(speech);
+  } catch { speechNotice.value = '朗读暂不可用，请稍后重试。'; }
+}
+function keyboard(event: KeyboardEvent) {
+  if (event.isComposing || event.repeat || event.ctrlKey || event.altKey || event.metaKey || event.shiftKey || exercise.value !== 'meaning' || loading.value || error.value || finished.value || !currentWord.value) return;
+  const target = event.target;
+  if (target instanceof HTMLElement && (target.closest('input, textarea, select, button, a, [contenteditable="true"], [role="textbox"]'))) return;
+  if (event.code === 'Space') { event.preventDefault(); if (!showAnswer.value) showWordAnswer(); }
+  else if (showAnswer.value && ['1','2','3'].includes(event.key)) { event.preventDefault(); answer(({ '1':'hard', '2':'normal', '3':'easy' } as const)[event.key as '1'|'2'|'3']); }
+}
+function back() { saveSession(); emit('back'); }
+onMounted(() => { restorePreferences(); void load(); window.addEventListener('keydown', keyboard); window.addEventListener('pagehide', saveSession); });
+onUnmounted(() => { saveSession(); loadVersion++; cancelSpeech(); window.removeEventListener('keydown', keyboard); window.removeEventListener('pagehide', saveSession); });
 </script>
 
 <template>
   <div class="study-page">
     <!-- 顶部 -->
     <header class="study-header">
-      <button class="back-button" @click="emit('back')">← 返回</button>
+      <button class="back-button" @click="back">← 返回</button>
 
       <div class="header-title">
         <span>AI VOCABULARY</span>
@@ -106,11 +206,15 @@ function speak() {
     </header>
 
     <div class="wordlist-controls">
-      <label for="exercise">练习方式</label><select id="exercise" v-model="exercise" :disabled="loading" @change="changeExercise"><option value="spelling">看释义 · 打字拼写</option><option value="meaning">看单词 · 记忆释义</option></select>
+      <label for="exercise">练习方式</label><select id="exercise" :value="exercise" :disabled="loading" @change="changeExercise"><option value="spelling">看释义 · 打字拼写</option><option value="meaning">看单词 · 记忆释义</option></select>
       <label for="wordlist">选择词库</label>
-      <select id="wordlist" v-model="wordList" :disabled="loading" @change="load"><option v-for="(name, key) in listNames" :key="key" :value="key">{{ name }}</option></select>
-      <label v-if="mode === 'study'"><input v-model="includeLearned" type="checkbox" :disabled="loading" @change="load"> 包含已学词</label>
+      <select id="wordlist" :value="wordList" :disabled="loading" @change="changeWordList"><option v-for="(name, key) in listNames" :key="key" :value="key">{{ name }}</option></select>
+      <label v-if="mode === 'study'"><input :checked="includeLearned" type="checkbox" :disabled="loading" @change="changeIncludeLearned"> 包含已学词</label>
     </div>
+    <p v-if="sessionNotice" class="session-notice" role="status">{{ sessionNotice }}</p>
+    <p v-if="!loading && !error && words.length && !saveError" class="save-hint">自动保存到当前浏览器 · 返回首页或刷新后，重新进入本模式即可继续</p>
+    <p v-if="saveError" class="session-notice save-error" role="alert">{{ saveError }}</p>
+    <p v-if="exercise === 'meaning' && !loading && !finished && words.length" class="save-hint">快捷键：Space 查看释义 · 1 不认识 · 2 模糊 · 3 认识（输入或操作控件时不触发）</p>
     <!-- 进度条 -->
     <div class="progress-container">
       <div class="progress-bar">
@@ -121,14 +225,14 @@ function speak() {
     </div>
 
     <p v-if="storageWarning" role="status">{{ storageWarning }}</p>
-    <main v-if="loading" class="study-content">正在加载 IELTS 词库…</main>
-    <main v-else-if="error" class="study-content" role="alert">{{ error }} <button class="show-button" @click="load">重新加载</button></main>
+    <main v-if="loading" class="study-content">正在加载{{ listNames[wordList] }}…</main>
+    <main v-else-if="error" class="study-content" role="alert">{{ error }} <button class="show-button" @click="load()">重新加载</button> <button class="hint-button" @click="back">返回首页</button></main>
     <main v-else-if="finished || !words.length" class="study-content">
-      <div class="word-card"><h2>{{ finished ? '学习完成！' : '暂时没有待学单词' }}</h2><p>本次完成 {{ completed }} 个单词，认识 / 首次拼对 {{ recognized }} 个。</p><p v-if="spellingCompleted">拼写完成 {{ spellingCompleted }} 词，首次独立拼对 {{ firstTryCorrect }} 词。</p><p v-if="!words.length">可以返回首页学习新词，或稍后再来复习。</p><button v-if="finished" class="show-button" @click="load">继续下一组</button> <button class="show-button" @click="emit('back')">返回首页</button></div>
+      <div class="word-card"><h2>{{ finished ? '学习完成！' : emptyCopy.title }}</h2><p v-if="finished">本次完成 {{ completed }} 个单词，认识 / 首次拼对 {{ recognized }} 个。</p><p v-if="spellingCompleted">拼写完成 {{ spellingCompleted }} 词，首次独立拼对 {{ firstTryCorrect }} 词。</p><p v-if="!words.length">{{ emptyCopy.text }}</p><button v-if="finished" class="show-button" @click="load(true)">继续下一组</button> <button class="show-button" @click="back">返回首页</button></div>
     </main>
     <!-- 单词卡片 -->
     <main v-else-if="currentWord" class="study-content">
-      <div class="word-card">
+      <div ref="wordCard" class="word-card" tabindex="-1">
         <div class="word-level">
           {{ listNames[wordList] }}
         </div>
@@ -140,15 +244,16 @@ function speak() {
         <div v-if="exercise === 'meaning' || revealed || spellingCorrect" class="phonetic">
           {{ currentWord.phonetic }}
 
-          <button class="sound-button" @click="speak">🔊</button>
+          <button class="sound-button" aria-label="朗读当前单词" @click="speak">🔊</button>
         </div>
+        <p v-if="speechNotice" class="speech-notice" role="status">{{ speechNotice }}</p>
 
         <section v-if="exercise === 'spelling'" class="spelling-area">
           <p class="meaning">{{ currentWord.meaning }}</p>
           <p class="question">根据释义输入英文单词。拼错可以重试，查看答案后需亲手输入一遍。</p>
           <form @submit.prevent="spellingCorrect ? nextSpelling() : checkSpelling()">
             <label class="input-label" for="spelling-input">英文拼写</label>
-            <input id="spelling-input" ref="spellingInput" v-model="typedWord" :readonly="spellingCorrect" class="spelling-input" type="text" lang="en" autocomplete="off" autocapitalize="none" autocorrect="off" :spellcheck="false" aria-describedby="spelling-feedback" placeholder="输入英文，按 Enter 核对" @input="feedback = ''">
+            <input id="spelling-input" ref="spellingInput" v-model="typedWord" maxlength="200" :readonly="spellingCorrect" class="spelling-input" type="text" lang="en" autocomplete="off" autocapitalize="none" autocorrect="off" :spellcheck="false" aria-describedby="spelling-feedback" placeholder="输入英文，按 Enter 核对" @input="feedback = ''" @keydown.enter="event => { if (event.isComposing) event.preventDefault(); }">
             <p id="spelling-feedback" role="status" class="spelling-feedback" :class="{ success: spellingCorrect }">{{ feedback }}</p>
             <button class="show-button" type="submit">{{ spellingCorrect ? '下一词 →' : '核对拼写' }}</button>
             <button v-if="!spellingCorrect && !revealed" class="hint-button" type="button" @click="revealSpelling">查看答案</button>
@@ -187,19 +292,19 @@ function speak() {
       <div v-if="exercise === 'meaning' && showAnswer" class="answer-buttons">
         <button class="answer-button hard" @click="answer('hard')">
           <span>😵</span>
-          <strong>不认识</strong>
+          <strong>不认识 · 1</strong>
           <small>1 分钟后复习</small>
         </button>
 
         <button class="answer-button normal" @click="answer('normal')">
           <span>🤔</span>
-          <strong>模糊</strong>
+          <strong>模糊 · 2</strong>
           <small>1 天后复习</small>
         </button>
 
         <button class="answer-button easy" @click="answer('easy')">
           <span>😎</span>
-          <strong>认识</strong>
+          <strong>认识 · 3</strong>
           <small>延长复习间隔</small>
         </button>
       </div>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch, onUnmounted } from 'vue';
 import OfficialResources from './components/OfficialResources.vue';
+import ComputerPractice from './components/ComputerPractice.vue';
+import { officialBank, type OfficialExam } from './data/officialBank';
 import IeltsLayout, { type Section } from './components/IeltsLayout.vue';
 import PracticeRecords from './components/PracticeRecords.vue';
 import { practiceHistory, historyError, savePractice, exportPractice, readPreference, savePreference } from './stores/practiceHistory';
@@ -9,12 +11,16 @@ const props = defineProps<{ kind: 'listening' | 'writing' }>();
 const emit = defineEmits<{ back: [] }>();
 const section = ref<Section>('overview');
 const search = ref('');
+const officialExams = computed(()=>officialBank.filter(exam=>exam.skill===props.kind));
+const filteredOfficial = computed(()=>officialExams.value.filter(exam=>(exam.title+' '+exam.source).toLowerCase().includes(search.value.toLowerCase())));
+const activeOfficial = ref<OfficialExam>();
+function openOfficial(exam:OfficialExam) { selectedId.value='';activeOfficial.value=exam; }
 const sessionId = ref<string | undefined>();
 const records = computed(() => practiceHistory.value.filter(r=>r.skill===props.kind));
 const filteredExams = computed(() => exams.value.filter(e=>(e.title+' '+e.source).toLowerCase().includes(search.value.toLowerCase())));
 const showTimer = ref(readPreference(`ielts-${props.kind}-show-timer`,true));
 watch(showTimer, value=>{ savePreference(`ielts-${props.kind}-show-timer`,value); if(!value) running.value=false; });
-function openExam(id: string) { selectedId.value=id; section.value='browse'; }
+function openExam(id: string) { activeOfficial.value=undefined;selectedId.value=id; section.value='browse'; }
 watch(section, value=>{ if(value!=='browse') running.value=false; });
 const bank = ref<Exam[]>([]);
 const message = ref('');
@@ -93,16 +99,19 @@ function finish() {
 
 <template>
   <IeltsLayout :title="kind === 'listening' ? '听力' : '写作'" v-model:section="section" @back="emit('back')">
-    <section v-if="section === 'overview'" class="panel"><h2>📊 学习总览</h2><p>选择题目开始练习，完成后查看练习记录。</p><div class="overview-grid"><div class="metric">本地题库<strong>{{ exams.length }}</strong>套题目</div><div class="metric">已完成练习<strong>{{ records.length }}</strong>条记录</div><div class="metric">最近练习<strong style="font-size:18px">{{ records[0]?.title || '尚未开始' }}</strong>{{ records[0]?.summary || '开始第一组练习吧' }}</div></div><button @click="section='browse'">进入题库浏览 →</button></section>
+    <section v-if="section === 'overview'" class="panel"><h2>📊 学习总览</h2><p>选择题目开始练习，完成后查看练习记录。</p><div class="overview-grid"><div class="metric">可练习题库<strong>{{ exams.length + officialExams.length }}</strong>官方样题与导入题目</div><div class="metric">已完成练习<strong>{{ records.length }}</strong>条记录</div><div class="metric">最近练习<strong style="font-size:18px">{{ records[0]?.title || '尚未开始' }}</strong>{{ records[0]?.summary || '开始第一组练习吧' }}</div></div><button @click="section='browse'">进入题库浏览 →</button></section>
     <PracticeRecords v-else-if="section === 'records'" :skill="kind" />
     <template v-else-if="section === 'more'"><OfficialResources :kind="kind" /><section class="panel"><h2>✨ 数据工具</h2><div class="actions"><button @click="exportBank">导出题库</button><button @click="exportPractice(kind)">导出练习记录</button><a href="/question-banks/README.md" target="_blank" rel="noopener">题库格式说明</a></div></section></template>
     <section v-else-if="section === 'settings'" class="panel"><h2>⚙️ 练习设置</h2><p><label><input v-model="showTimer" type="checkbox"> 显示练习计时</label></p><p>练习计时和草稿保存在当前练习中；切换到其他栏目时暂停计时。</p><p>题库与完成记录保存在当前浏览器，可在“更多”中导出。</p></section>
     <template v-else-if="section === 'browse'">
-    <section class="bank-panel">
-      <h2>📚 题库浏览 · {{ exams.length }} 套</h2>
+    <section v-if="!activeOfficial" class="bank-panel">
+      <h2>📚 题库浏览 · {{ exams.length + officialExams.length }} 套</h2>
       <input v-model="search" class="search" placeholder="搜索题目或来源" aria-label="搜索题库">
+      <h3>官方原题样卷</h3><p>在线嵌入原题 PDF，使用本站机考答题区；题目与音频来自 IELTS.org。</p>
+      <div class="browse-grid"><article v-for="exam in filteredOfficial" :key="exam.id" class="exam-card"><span>官方样题</span><h3>{{ exam.title }}</h3><p>{{ exam.source }} · {{ exam.skill === 'writing' ? exam.minutes + ' 分钟' : exam.questionNumbers?.length + ' 题' }}</p><button @click="openOfficial(exam)">进入机考练习</button></article></div>
+      <h3 v-if="exams.length">我的导入题库</h3>
       <div class="browse-grid"><article v-for="exam in filteredExams" :key="exam.id" class="exam-card"><h3>{{ exam.title }}</h3><p>{{ exam.source }}</p><button @click="openExam(exam.id)">开始练习</button></article></div>
-      <p v-if="exams.length && !filteredExams.length">没有匹配的题目。</p>
+      <p v-if="!filteredOfficial.length && !filteredExams.length">没有匹配的题目。</p>
       <p>导入已有题库，或从题库 JSON 地址同步。相同题目 ID 将更新，其他题目保留。</p>
       <div class="actions"><label class="file-button">导入 JSON 题库<input type="file" accept=".json,application/json" @change="importFile"></label><button @click="exportBank">导出题库</button><a href="/question-banks/README.md" target="_blank">题库格式说明</a></div>
       <form class="actions" @submit.prevent="sync"><input v-model="syncUrl" type="text" required placeholder="https://…/question-bank.json" aria-label="题库同步地址"><button :disabled="syncing">{{ syncing ? '同步中…' : '同步题库' }}</button></form>
@@ -110,7 +119,8 @@ function finish() {
       <p v-if="!exams.length">尚未导入{{ kind === 'listening' ? '听力题库' : '写作题库' }}。可以到“更多”使用官方资源，也可导入 JSON 在本站练习。</p>
       <label v-else>选择试题 <select v-model="selectedId"><option value="">请选择</option><option v-for="exam in exams" :key="exam.id" :value="exam.id">{{ exam.title }}</option></select></label>
     </section>
-    <section v-if="selected" :key="selected.id" class="practice-panel">
+    <ComputerPractice v-if="activeOfficial" :key="activeOfficial.id" :exam="activeOfficial" @close="activeOfficial=undefined" />
+    <section v-else-if="selected" :key="selected.id" class="practice-panel">
       <h2>{{ selected.title }}</h2><p>来源：{{ selected.source }}</p>
       <div v-if="showTimer" class="actions"><span>用时 {{ timerLabel }}</span><button @click="running = !running; startTime = Date.now() - seconds * 1000">{{ running ? '暂停计时' : '开始计时' }}</button></div>
       <template v-if="selected.kind === 'listening'">

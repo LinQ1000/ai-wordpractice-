@@ -1,4 +1,11 @@
 * { box-sizing: border-box; }
 body { margin: 0; }
-button, input { font: inherit; }
+button, input, select, textarea { font: inherit; }
 a { color: inherit; }
+:where(button, a, input, select, textarea, summary):focus-visible { outline: 3px solid #5758d8; outline-offset: 3px; }
+:where(button, select, input:not([type=checkbox]):not([type=radio])) { min-height: 44px; }
+button:disabled { cursor: not-allowed; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+@media (max-width: 700px) { input:not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px; } }
