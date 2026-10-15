@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import Study from './Study.vue';
+import ExamPractice from './ExamPractice.vue';
+import Speaking from './Speaking.vue';
 import { records, today, activities, learnedWords, accuracy, studiedToday, minutesToday, streak, batchSize, saveSettings, storageWarning, type Mode } from './stores/learning';
-const currentPage = ref<'home' | 'study' | 'stats' | 'settings'>('home');
+const currentPage = ref<'home' | 'study' | 'stats' | 'settings' | 'listening' | 'writing' | 'speaking'>('home');
 const mode = ref<Mode>('study');
 const clock = ref(Date.now());
 let timer: ReturnType<typeof setInterval>;
@@ -21,6 +23,10 @@ function startStudy(value: Mode = 'study') { mode.value = value; currentPage.val
 <template>
   <Study v-if="currentPage === 'study'" :mode="mode" @back="goHome" />
 
+  <ExamPractice v-else-if="currentPage === 'listening' || currentPage === 'writing'" :key="currentPage" :kind="currentPage" @back="goHome" />
+
+  <Speaking v-else-if="currentPage === 'speaking'" @back="goHome" />
+
   <div v-else class="app">
     <!-- 左侧菜单 -->
     <aside class="sidebar">
@@ -33,8 +39,10 @@ function startStudy(value: Mode = 'study') { mode.value = value; currentPage.val
       </div>
 
       <nav>
-        <a class="nav-item" href="/ielts/index.html">🎓 IELTS 综合练习</a>
-        <a class="nav-item" href="/original-word-practice.html">📅 基础词汇练习</a>
+        <a class="nav-item" href="/ielts/index.html">📖 IELTS 阅读</a>
+        <a class="nav-item" href="#listening" @click.prevent="currentPage = 'listening'">🎧 IELTS 听力</a>
+        <a class="nav-item" href="#writing" @click.prevent="currentPage = 'writing'">✍️ IELTS 写作</a>
+        <a class="nav-item" href="#speaking" @click.prevent="currentPage = 'speaking'">🎙️ IELTS 口语</a>
         <div class="nav-title">学习</div>
 
         <a class="nav-item" :class="{ active: currentPage === 'home' }" href="#home" @click.prevent="goHome">
@@ -100,7 +108,7 @@ function startStudy(value: Mode = 'study') { mode.value = value; currentPage.val
       </header>
 
       <p v-if="storageWarning" role="alert">{{ storageWarning }}</p>
-      <div class="mobile-actions"><button @click="goHome">首页</button><button @click="startStudy('review')">复习</button><button @click="startStudy('mistakes')">错词</button><button @click="currentPage = 'stats'">统计</button><button @click="currentPage = 'settings'">设置</button><a href="/ielts/index.html">IELTS</a></div>
+      <div class="mobile-actions"><button @click="goHome">首页</button><button @click="startStudy('review')">复习</button><button @click="startStudy('mistakes')">错词</button><button @click="currentPage = 'stats'">统计</button><button @click="currentPage = 'settings'">设置</button><a href="/ielts/index.html">IELTS 阅读</a><button @click="currentPage = 'listening'">听力</button><button @click="currentPage = 'writing'">写作</button><button @click="currentPage = 'speaking'">口语</button></div>
       <section v-if="currentPage === 'settings'" class="panel">
         <h3>学习设置</h3><p>每组优先安排到期词，再补充新词。</p>
         <form @submit.prevent="applySettings"><label for="batch-size">每组单词数量（5–100）</label> <input id="batch-size" v-model.number="settingSize" type="number" min="5" max="100" step="1" required><button class="show-control" type="submit">保存设置</button></form><p role="status">{{ settingsMessage }}</p>
