@@ -5,7 +5,7 @@ const names = { listening: '听力', writing: '写作', speaking: '口语' };
 const descriptions = {
   listening: '选择题、填空与图表题等官方样题，提供在线练习、答案及录音文本入口。',
   writing: '学术类 Task 1 图表题与 Task 2 议论文官方样题。',
-  speaking: '官方口语模拟练习，了解 Part 1–3 的任务形式。',
+  speaking: '官方口语模拟练习，了解 Part 1–3 的任务形式。  ',
 };
 const resources = computed(() => [
   {
