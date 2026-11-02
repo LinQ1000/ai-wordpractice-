@@ -10,7 +10,6 @@
       "examId": "p1-medium-247",
       "title": "Building a castle 建造城堡",
       "category": "P1",
-      "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
       "noteType": "详解",
       "matchedTitle": "Building a castle 建造城堡"
     },

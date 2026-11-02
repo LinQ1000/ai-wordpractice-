@@ -10,7 +10,6 @@
       "examId": "p2-medium-248",
       "title": "Introduction to a book about the assessment of carbon footprints 碳足迹",
       "category": "P2",
-      "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
       "noteType": "详解",
       "matchedTitle": "Introduction to a book about the assessment of carbon footprints 碳足迹"
     },

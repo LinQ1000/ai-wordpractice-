@@ -3406,7 +3406,7 @@ window.addEventListener('beforeunload', () => {
     {
       id: 'welcome',
       target: null,
-      title: '👋 欢迎使用 IELTS Atlas',
+      title: '👋 欢迎使用 IELTS Practice',
       content: '这是一个专为雅思备考设计的练习系统，提供阅读练习、练习回顾、词汇背诵和数据备份等功能。让我们快速了解一下各项功能吧！',
       position: 'center',
       showSkip: false,

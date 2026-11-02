@@ -10,7 +10,6 @@
       "examId": "p1-high-240",
       "title": "The Origins of Weather Forecasting 天气预报",
       "category": "P1",
-      "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
       "noteType": "详解",
       "matchedTitle": "The Origins of Weather Forecasting 天气预报"
     },

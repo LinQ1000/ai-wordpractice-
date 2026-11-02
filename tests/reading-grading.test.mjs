@@ -1,0 +1,12 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {gradeQuestion, gradeExam, normalizeAnswer} from '../src/reading/grading.ts';
+const text={id:'q1',label:'1',kind:'text',promptHtml:'',options:[],accepted:['gold ring'],points:1,maxWords:2};
+test('text grading normalizes case, full-width letters and whitespace',()=>{assert.equal(gradeQuestion(text,'  ＧＯＬＤ   RING ').earned,1);assert.equal(normalizeAnswer(' Farmer’s '),"farmer's");});
+test('wrong, unanswered and excessive-length answers do not score',()=>{assert.equal(gradeQuestion(text,'silver ring').status,'incorrect');assert.equal(gradeQuestion(text,'').status,'unanswered');assert.equal(gradeQuestion(text,'a gold ring').earned,0);});
+test('explicit alternatives and optional source words are accepted',()=>{assert.equal(gradeQuestion({...text,accepted:['4/four']},'four').earned,1);assert.equal(gradeQuestion({...text,accepted:['(vigorous) exercise']},'exercise').earned,1);assert.equal(gradeQuestion({...text,accepted:['ring','gold ring']},'ring').earned,1);});
+const multi={...text,id:'q2-3',label:'2、3',kind:'multi',options:['A','B','C','D'].map(value=>({value,label:value})),accepted:[],correctSet:['A','C'],points:2,selectionCount:2};
+test('multi-select scores without order and awards partial credit',()=>{assert.equal(gradeQuestion(multi,['C','A']).earned,2);assert.equal(gradeQuestion(multi,['A','B']).earned,1);assert.equal(gradeQuestion(multi,['B','D']).earned,0);});
+test('duplicate, invalid and oversized selections cannot inflate marks',()=>{assert.equal(gradeQuestion(multi,['A','A']).earned,1);assert.equal(gradeQuestion(multi,['A','C','D']).earned,0);assert.equal(gradeQuestion(multi,['A','forged']).earned,0);});
+test('summary uses points, not number of controls',()=>{const exam={groups:[{questions:[text,multi]}]};const result=gradeExam(exam,{q1:'gold ring','q2-3':['A','C']});assert.equal(result.earned,3);assert.equal(result.total,3);assert.equal(result.percentage,100);});
+test('input answers are not mutated by grading',()=>{const value=['C','A'];const answers={'q2-3':value};gradeExam({groups:[{questions:[multi]}]},answers);assert.deepEqual(value,['C','A']);});

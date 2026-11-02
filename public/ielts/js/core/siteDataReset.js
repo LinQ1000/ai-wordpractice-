@@ -1,4 +1,4 @@
-/** Clear all browser-local IELTS Atlas data while preserving external JSON files. */
+/** Clear all browser-local IELTS Practice data while preserving external JSON files. */
 (function initSiteDataReset(global) {
     'use strict';
 
@@ -37,7 +37,7 @@
             request.onsuccess = () => resolve({ name, deleted: true });
             request.onerror = () => reject(request.error || new Error(`删除数据库失败：${name}`));
             request.onblocked = () => notify(
-                `数据库 ${name} 正被其他 IELTS Atlas 标签页占用。请关闭其他标签页，清理会自动继续。`,
+                `数据库 ${name} 正被其他 IELTS Practice 标签页占用。请关闭其他标签页，清理会自动继续。`,
                 'warning'
             );
         });

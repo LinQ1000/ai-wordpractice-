@@ -1,0 +1,160 @@
+/* Shared visual theme for the reading shell and embedded vocabulary app. */
+:root[data-appearance="apple"], html .rp-vocabulary {
+    color-scheme: light;
+    --font-family-primary: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Segoe UI", sans-serif;
+    --color-brand-primary: #0071e3;
+    --color-brand-secondary: #0071e3;
+    --color-brand-gradient: linear-gradient(#0071e3, #0071e3);
+    --color-gray-900: #1d1d1f;
+    --color-gray-700: #424245;
+    --color-gray-500: #6e6e73;
+    --shui-text-strong: #1d1d1f;
+    --shui-text-muted: #6e6e73;
+    --shui-accent: #0071e3;
+    --shui-accent-alt: #0071e3;
+    --shui-panel-bg: #fff;
+    --shui-panel-border: #e8e8ed;
+    --shui-panel-shadow: 0 4px 24px #00000004;
+    --shui-surface-bg: #f5f5f7;
+    --shui-surface-border: #e8e8ed;
+    --shui-gradient-start: #0071e3;
+    --shui-gradient-end: #0071e3;
+    --shui-radius-xl: 24px;
+    --shui-radius-lg: 20px;
+    --shui-radius-md: 14px;
+    --shui-radius-sm: 12px;
+    --bauhaus-text-main: #1d1d1f;
+    --bauhaus-text-muted: #6e6e73;
+    --bauhaus-accent-blue: #0071e3;
+    --bauhaus-glass-shadow: none;
+    --bloom-surface-strong: #fff;
+    --bloom-border: #e8e8ed;
+    --bloom-shadow: none;
+    --bloom-sheen: linear-gradient(transparent, transparent);
+}
+html[data-appearance="apple"] body.hero-body {
+    font-family: var(--font-family-primary);
+    background: #f5f5f7 !important;
+    color: #1d1d1f;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+}
+html[data-appearance="apple"] body.hero-body::before,
+html[data-appearance="apple"] body.hero-body::after,
+html[data-appearance="apple"] :is(#shui-three-bg, .newjeans-bg-container, .ascii-bg-container) { display: none !important; }
+html[data-appearance="apple"] .hero-shell { max-width: 1200px; gap: 28px; padding: 28px 40px 80px; }
+html[data-appearance="apple"] .hero-header { padding: 10px 4px 6px; }
+html[data-appearance="apple"] .hero-header h1 { gap: 12px; }
+html[data-appearance="apple"] .hero-brand-mark { width: 36px; height: 36px; background: transparent; border: 0; box-shadow: none; backdrop-filter: none; }
+html[data-appearance="apple"] .hero-brand-text { font-family: inherit; font-size: 24px; font-weight: 600; line-height: 1.2; letter-spacing: -.7px; color: #1d1d1f; text-shadow: none; }
+html[data-appearance="apple"] .hero-nav {
+    position: sticky; top: 12px; z-index: 100;
+    border: 1px solid #e8e8ed; border-radius: 16px;
+    background: #ffffffed; box-shadow: 0 4px 16px #00000004;
+    padding: 6px; gap: 4px; backdrop-filter: blur(20px);
+}
+html[data-appearance="apple"] .hero-nav__btn { min-height: 44px; padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 500; color: #6e6e73; text-shadow: none; }
+html[data-appearance="apple"] .hero-nav__btn:hover { background: #f5f5f7; color: #1d1d1f; box-shadow: none; }
+html[data-appearance="apple"] .hero-nav__btn.active { background: #eaf3ff; color: #0066cc; box-shadow: none; text-shadow: none; }
+html[data-appearance="apple"] .hero-nav__liquid-indicator { display: none; }
+html[data-appearance="apple"] .hero-nav .ui-emoji-icon { display: none; }
+html[data-appearance="apple"] :is(.view.hero-panel, .hero-panel, #settings-view .hero-panel) { background: #fff; border: 1px solid #e8e8ed; border-radius: 24px; box-shadow: 0 4px 24px #00000004; backdrop-filter: none; }
+html[data-appearance="apple"] .view.hero-panel { padding: 36px; }
+html[data-appearance="apple"] .hero-section { margin-bottom: 0; }
+html[data-appearance="apple"] .hero-panel__header { margin-bottom: 28px; }
+html[data-appearance="apple"] .hero-panel__title { color: #1d1d1f; font-size: clamp(24px, 3vw, 32px); font-weight: 600; letter-spacing: -.8px; line-height: 1.2; }
+html[data-appearance="apple"] :is(.overview-section-title, .category-title) { color: #1d1d1f; font-weight: 600; letter-spacing: -.35px; }
+html[data-appearance="apple"] .overview-section-title { font-size: 20px; }
+html[data-appearance="apple"] .category-grid { gap: 20px; }
+html[data-appearance="apple"] .category-grid .category-card { padding: 28px; border: 1px solid #e8e8ed; border-radius: 20px; background: #f5f5f7; box-shadow: none; backdrop-filter: none; transition: transform .2s ease, box-shadow .2s ease; }
+html[data-appearance="apple"] .category-grid .category-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px #00000007; }
+html[data-appearance="apple"] .category-card::before,
+html[data-appearance="apple"] .category-card::after,
+html[data-appearance="apple"] #settings-view .hero-panel::before { display: none; }
+html[data-appearance="apple"] .category-meta { color: #6e6e73; margin-top: 6px; }
+html[data-appearance="apple"] :is(.hero-panel .btn, .category-card .btn[data-action], .exam-item-action-btn, .shui-glass-btn) {
+    background: #0071e3 !important; background-image: none !important; color: #fff !important;
+    border: 1px solid transparent; border-radius: 999px; box-shadow: none !important;
+    padding: 10px 20px; font-size: 14px; font-weight: 500; letter-spacing: 0;
+    text-shadow: none; transition: background .18s ease, transform .18s ease;
+}
+html[data-appearance="apple"] :is(.hero-panel .btn, .exam-item-action-btn):hover { background: #0077ed !important; transform: translateY(-1px); }
+html[data-appearance="apple"] :is(.hero-panel .btn.btn-secondary, .category-card .btn.btn-secondary[data-action]) { color: #0066cc !important; background: #eaf3ff !important; border-color: transparent; }
+html[data-appearance="apple"] .hero-panel .btn.btn-warning { color: #9a3412 !important; background: #fff3e6 !important; }
+html[data-appearance="apple"] :is(.hero-panel .btn.btn-danger, .hero-panel .btn-danger) { color: #b42318 !important; background: #fff0ee !important; }
+html[data-appearance="apple"] :is(.shui-glass-btn::before, .shui-glass-btn::after) { display: none; }
+html[data-appearance="apple"] :is(.hero-surface, .search-box, .exam-item, .tool-card, .settings-system-info) { background: #f5f5f7; border: 1px solid #e8e8ed; border-radius: 16px; box-shadow: none; backdrop-filter: none; }
+html[data-appearance="apple"] .exam-item:hover { background: #fafafa; border-color: #d2d2d7; box-shadow: none; transform: none; }
+html[data-appearance="apple"] :is(.exam-info h4, .tool-card h3) { color: #1d1d1f; font-weight: 600; }
+html[data-appearance="apple"] :is(.tool-card p, .exam-meta, .more-view-subtitle) { color: #6e6e73; }
+html[data-appearance="apple"] .tool-card:hover { background: #fafafa; box-shadow: 0 4px 16px #00000006; transform: translateY(-2px); }
+html[data-appearance="apple"] :is(input[type="search"], input[type="text"], input[type="number"], select, textarea) { color: #1d1d1f; background: #fff; border: 1px solid #d2d2d7; border-radius: 10px; box-shadow: none; }
+html[data-appearance="apple"] .shui-segmented-control { background: #f5f5f7; border: 1px solid #e8e8ed; border-radius: 10px; box-shadow: none; }
+html[data-appearance="apple"] .shui-segmented-btn { color: #6e6e73; text-shadow: none; }
+html[data-appearance="apple"] .shui-segmented-btn.active { color: #0066cc; background: #fff; border-radius: 8px; box-shadow: 0 1px 4px #00000008; }
+html[data-appearance="apple"] :is(.theme-modal-content, .shui-secondary-modal__content, .modal-content) { color: #1d1d1f; background: #fff; border: 1px solid #e8e8ed; border-radius: 24px; box-shadow: 0 24px 80px #00000020; }
+html[data-appearance="apple"] #boot-overlay { background: #f5f5f7f5; }
+html[data-appearance="apple"] .boot-panel { color: #1d1d1f; background: #fff; border: 1px solid #e8e8ed; box-shadow: 0 12px 40px #00000007; }
+html[data-appearance="apple"] .boot-logo { font-size: 20px; font-weight: 600; letter-spacing: -.5px; text-transform: none; }
+html[data-appearance="apple"] :is(.boot-status, .boot-progress__text) { color: #6e6e73; }
+html[data-appearance="apple"] .boot-progress { background: #e8e8ed; height: 4px; }
+html[data-appearance="apple"] .boot-progress__bar { background: #0071e3; }
+html[data-appearance="apple"] :where(button, a, input, select, textarea):focus-visible { outline: 3px solid #0071e380; outline-offset: 3px; }
+.theme-bg-apple { background: #f5f5f7; }
+.theme-bg-apple::after { content: "Aa"; position: absolute; inset: 0; display: grid; place-items: center; font: 600 72px -apple-system, BlinkMacSystemFont, sans-serif; color: #1d1d1f; letter-spacing: -4px; }
+
+/* Vocabulary is a document inside the reading shell, with the same visual tokens. */
+html .rp-vocabulary body { font-family: var(--font-family-primary); color: #1d1d1f; background: transparent; -webkit-font-smoothing: antialiased; }
+html .rp-vocabulary .practice-tabs { gap: 6px; padding: 4px 0 24px; }
+html .rp-vocabulary .practice-tabs button { border: 0; border-radius: 999px; color: #6e6e73; background: #f5f5f7; font-weight: 500; }
+html .rp-vocabulary .practice-tabs button[aria-current="page"] { background: #0071e3; color: #fff; }
+html .rp-vocabulary :is(.study-header, .header) { padding: 12px 0 24px; }
+html .rp-vocabulary :is(.header h1, .word-card h2) { color: #1d1d1f; letter-spacing: -1px; }
+html .rp-vocabulary .hero-card { color: #1d1d1f; background: #f5f5f7; box-shadow: none; border: 1px solid #e8e8ed; border-radius: 24px; }
+html .rp-vocabulary .hero-left h2 { font-weight: 600; letter-spacing: -.8px; }
+html .rp-vocabulary .circle-inner { color: #1d1d1f; background: #f5f5f7; }
+html .rp-vocabulary :is(.word-card, .panel, .stat-card) { background: #fff; border: 1px solid #e8e8ed; border-radius: 20px; box-shadow: 0 4px 20px #00000004; }
+html .rp-vocabulary .word-card { padding: clamp(24px, 4vw, 48px); }
+html .rp-vocabulary :is(.show-button, .show-control, .start-button) { background: #0071e3; color: #fff; border: 0; border-radius: 999px; box-shadow: none; }
+html .rp-vocabulary :is(.back-button, .hint-button, .sound-button) { background: #f5f5f7; color: #0066cc; border: 1px solid #e8e8ed; border-radius: 999px; box-shadow: none; }
+html .rp-vocabulary :is(.spelling-input, input, select) { border-color: #d2d2d7; border-radius: 10px; background: #fff; color: #1d1d1f; }
+html .rp-vocabulary :is(.progress, .bar-progress) { background: #0071e3; }
+html .rp-vocabulary .ai-panel { background: #1d1d1f; border-radius: 24px; }
+html .rp-vocabulary .ai-panel::after { display: none; }
+html .rp-vocabulary .word-level { color: #0066cc; background: #eaf3ff; border-radius: 999px; }
+html .rp-vocabulary .example { background: #f5f5f7; border: 0; border-radius: 14px; }
+html .rp-vocabulary .session-notice { color: #424245; background: #f5f5f7; border: 1px solid #e8e8ed; border-radius: 12px; }
+html .rp-vocabulary .session-notice.save-error { background: #fff0ee; color: #b42318; }
+html .rp-vocabulary :is(.tag, .ai-label, .panel-label, .header-title span) { letter-spacing: 1.5px; font-weight: 500; }
+@media (max-width: 700px) {
+    html[data-appearance="apple"] .hero-shell { gap: 18px; padding: 16px 16px 40px; }
+    html[data-appearance="apple"] .hero-brand-text { font-size: 21px; }
+    html[data-appearance="apple"] .hero-nav { top: 8px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: 14px; }
+    html[data-appearance="apple"] .hero-nav__btn { font-size: 13px; padding: 10px 6px; min-width: 0; }
+    html[data-appearance="apple"] .view.hero-panel { padding: 22px 16px; border-radius: 20px; }
+    html[data-appearance="apple"] .hero-panel__header { margin-bottom: 22px; }
+    html[data-appearance="apple"] .category-grid .category-card { padding: 22px; }
+    html[data-appearance="apple"] .category-card .category-actions { flex-wrap: wrap; gap: 10px; }
+    html .rp-vocabulary .practice-tabs { gap: 6px; }
+    html .rp-vocabulary .practice-tabs button { padding: 10px 8px; font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    html[data-appearance="apple"] *, html .rp-vocabulary * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+html .rp-vocabulary .session-notice { padding: 12px 16px; line-height: 1.6; }
+html .rp-vocabulary .header-title span { color: #6e6e73; }
+html .rp-vocabulary :is(input, select, textarea):focus-visible { outline: 3px solid #0071e380; outline-offset: 3px; }
+/* Replace legacy ID-level glass and warning styles in the library and settings. */
+html[data-appearance="apple"] #browse-view .exam-item { background: #f5f5f7; border: 1px solid #e8e8ed; box-shadow: none; }
+html[data-appearance="apple"] #browse-view .exam-item-action-btn { color: #0066cc !important; background: #eaf3ff !important; border-color: transparent !important; border-radius: 999px !important; box-shadow: none !important; backdrop-filter: none !important; font-weight: 500 !important; }
+html[data-appearance="apple"] #browse-view .exam-item-action-btn[data-action="start"] { color: #fff !important; background: #0071e3 !important; }
+html[data-appearance="apple"] #settings-view .system-management-panel .btn { color: #0066cc !important; background: #eaf3ff !important; border-color: transparent !important; }
+html[data-appearance="apple"] #settings-view .data-mgmt-btn { color: #fff !important; background: #0071e3 !important; }
+html[data-appearance="apple"] #settings-view #clear-cache-btn { color: #b42318 !important; background: #fff0ee !important; border-color: transparent !important; }
+html[data-appearance="apple"] #settings-view .settings-system-info { color: #424245; background: #f5f5f7; border: 1px solid #e8e8ed; font-size: 14px; font-weight: 400; text-align: left; }
+html[data-appearance="apple"] #settings-view .settings-system-info__status { color: #248a3d; }
+html[data-appearance="apple"] #settings-view .settings-system-info > div { padding: 8px 0; }
+
+html .rp-vocabulary .app { min-height: 0; }
+html .rp-vocabulary .main { width: 100%; max-width: none; padding: 20px 8px; }
+html .rp-vocabulary .study-page { min-height: 0; padding: 20px 8px; background: transparent; }

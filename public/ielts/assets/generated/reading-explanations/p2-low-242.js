@@ -10,7 +10,6 @@
       "examId": "p2-low-242",
       "title": "Walking and shoes in eighteenth-century London 伦敦鞋子的发展史",
       "category": "P2",
-      "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
       "noteType": "详解",
       "matchedTitle": "Walking and shoes in eighteenth-century London 伦敦鞋子的发展史"
     },

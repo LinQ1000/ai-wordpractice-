@@ -1353,7 +1353,7 @@
         panel.className = 'external-backup-panel external-backup-panel--modal';
         var description = global.document.createElement('p');
         description.className = 'external-backup-panel__desc';
-        description.textContent = '绑定本地文件夹后，IELTS Atlas 会写入完整的 v2 数据快照。磁盘文件不会因清理浏览器站点数据而删除；后台写入不会主动请求权限。';
+        description.textContent = '绑定本地文件夹后，IELTS Practice 会写入完整的 v2 数据快照。磁盘文件不会因清理浏览器站点数据而删除；后台写入不会主动请求权限。';
         var statusCard = global.document.createElement('div');
         statusCard.className = 'external-backup-status-card';
         var statusLabel = global.document.createElement('div');

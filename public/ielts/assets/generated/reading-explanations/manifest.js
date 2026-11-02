@@ -1822,7 +1822,6 @@
     "dataKey": "p2-medium-245",
     "script": "../reading-explanations/p2-medium-245.js",
     "title": "Understanding climate change 理解气候变化",
-    "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
     "matchedTitle": "Understanding climate change 理解气候变化"
   },
   "p1-medium-246": {
@@ -1830,7 +1829,6 @@
     "dataKey": "p1-medium-246",
     "script": "../reading-explanations/p1-medium-246.js",
     "title": "Socotra Island 索科特拉岛",
-    "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
     "matchedTitle": "Socotra Island 索科特拉岛"
   },
   "p1-medium-247": {
@@ -1838,7 +1836,6 @@
     "dataKey": "p1-medium-247",
     "script": "../reading-explanations/p1-medium-247.js",
     "title": "Building a castle 建造城堡",
-    "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
     "matchedTitle": "Building a castle 建造城堡"
   },
   "p2-medium-248": {
@@ -1846,7 +1843,6 @@
     "dataKey": "p2-medium-248",
     "script": "../reading-explanations/p2-medium-248.js",
     "title": "Introduction to a book about the assessment of carbon footprints 碳足迹",
-    "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
     "matchedTitle": "Introduction to a book about the assessment of carbon footprints 碳足迹"
   },
   "p1-high-240": {
@@ -1854,7 +1850,6 @@
     "dataKey": "p1-high-240",
     "script": "../reading-explanations/p1-high-240.js",
     "title": "The Origins of Weather Forecasting 天气预报",
-    "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
     "matchedTitle": "The Origins of Weather Forecasting 天气预报"
   },
   "p3-medium-244": {
@@ -1862,7 +1857,6 @@
     "dataKey": "p3-medium-244",
     "script": "../reading-explanations/p3-medium-244.js",
     "title": "Look who was talking 语言的起源",
-    "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
     "matchedTitle": "Look who was talking 语言的起源"
   },
   "p2-low-240": {
@@ -1870,7 +1864,6 @@
     "dataKey": "p2-low-240",
     "script": "../reading-explanations/p2-low-240.js",
     "title": "Coins - the first form of money 硬币起源",
-    "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
     "matchedTitle": "Coins - the first form of money 硬币起源"
   },
   "p2-low-242": {
@@ -1878,7 +1871,6 @@
     "dataKey": "p2-low-242",
     "script": "../reading-explanations/p2-low-242.js",
     "title": "Walking and shoes in eighteenth-century London 伦敦鞋子的发展史",
-    "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
     "matchedTitle": "Walking and shoes in eighteenth-century London 伦敦鞋子的发展史"
   },
   "p3-medium-241": {
@@ -1886,7 +1878,6 @@
     "dataKey": "p3-medium-241",
     "script": "../reading-explanations/p3-medium-241.js",
     "title": "Who looks after the children in today's Britain? 育儿分工",
-    "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
     "matchedTitle": "Who looks after the children in today's Britain 育儿分工"
   },
   "p2-medium-243": {
@@ -1894,7 +1885,6 @@
     "dataKey": "p2-medium-243",
     "script": "../reading-explanations/p2-medium-243.js",
     "title": "The internal body clock 生物钟",
-    "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
     "matchedTitle": "The internal body clock 生物钟"
   }
 };

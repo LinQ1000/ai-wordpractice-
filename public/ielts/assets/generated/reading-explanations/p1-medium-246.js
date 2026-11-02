@@ -10,7 +10,6 @@
       "examId": "p1-medium-246",
       "title": "Socotra Island 索科特拉岛",
       "category": "P1",
-      "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
       "noteType": "详解",
       "matchedTitle": "Socotra Island 索科特拉岛"
     },

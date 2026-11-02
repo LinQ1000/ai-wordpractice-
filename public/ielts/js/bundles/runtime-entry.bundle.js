@@ -536,9 +536,11 @@
 
     function start(themeName = null) {
         if (!themeName) {
-            themeName = 'floral-bloom';
+            themeName = 'apple';
         }
 
+        document.documentElement.setAttribute('data-appearance', themeName === 'apple' ? 'apple' : 'custom');
+        document.documentElement.setAttribute('data-theme', themeName === 'apple' ? 'apple' : 'heroui');
         try {
             document.body.setAttribute('data-bg-theme', themeName);
         } catch (e) {}
@@ -548,7 +550,7 @@
             asciiContainer.innerHTML = '';
         }
 
-        if (themeName === 'newjeans' || themeName === 'ascii-flower') {
+        if (themeName === 'apple' || themeName === 'newjeans' || themeName === 'ascii-flower') {
             try {
                 if (global.SHUIThreeBackground) {
                     global.SHUIThreeBackground.destroy();
@@ -580,6 +582,7 @@
 
     global.switchBgTheme = function(themeName) {
         if (global.AppData && global.AppData.preferences) {
+            global.AppData.preferences.setTheme(themeName === 'apple' ? 'apple' : 'apple-custom').catch((error) => console.warn('[Theme] preference save failed:', error));
             global.AppData.preferences.setThreeBackground(themeName).catch((error) => console.warn('[SHUI Three Background] preference save failed:', error));
         }
         start(themeName);
@@ -588,10 +591,10 @@
     async function init() {
         try {
             await global.AppData.ready;
-            const saved = await global.AppData.preferences.getThreeBackground();
-            start(saved || 'floral-bloom');
+            const [theme, saved] = await Promise.all([global.AppData.preferences.getTheme(), global.AppData.preferences.getThreeBackground()]);
+            start(theme === 'apple-custom' ? saved || 'apple' : 'apple');
         } catch (_) {
-            start('floral-bloom');
+            start('apple');
         }
     }
 

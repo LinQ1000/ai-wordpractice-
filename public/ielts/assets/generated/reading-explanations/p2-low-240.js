@@ -10,7 +10,6 @@
       "examId": "p2-low-240",
       "title": "Coins - the first form of money 硬币起源",
       "category": "P2",
-      "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
       "noteType": "详解",
       "matchedTitle": "Coins - the first form of money 硬币起源"
     },

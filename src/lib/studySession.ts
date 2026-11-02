@@ -1,7 +1,7 @@
 import type { Mode, Rating, Word } from '../stores/learning';
 import { matchesSpelling } from './spelling';
 
-export type WordList = 'ielts' | 'month' | 'week' | 'season';
+export type WordList = 'reading' | 'ielts' | 'month' | 'week' | 'season';
 export type Exercise = 'spelling' | 'meaning';
 export interface StudyPreferences { wordList: WordList; exercise: Exercise; includeLearned: boolean }
 export interface PendingAnswer { id: string; word: string; rating: Rating; at: number; seconds: number; exercise: Exercise }
@@ -15,7 +15,7 @@ const object = (value: unknown): value is Record<string, unknown> => !!value && 
 const integer = (value: unknown, max: number): value is number => typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= max;
 const exercise = (value: unknown): value is Exercise => value === 'spelling' || value === 'meaning';
 export function parseStudyPreferences(value: unknown): StudyPreferences | undefined {
-  if (!object(value) || !['ielts', 'month', 'week', 'season'].includes(String(value.wordList)) || !exercise(value.exercise) || typeof value.includeLearned !== 'boolean') return;
+  if (!object(value) || !['reading', 'ielts', 'month', 'week', 'season'].includes(String(value.wordList)) || !exercise(value.exercise) || typeof value.includeLearned !== 'boolean') return;
   return { wordList: value.wordList as WordList, exercise: value.exercise, includeLearned: value.includeLearned };
 }
 export function studyDraftKey(mode: Mode, settings: StudyPreferences) {

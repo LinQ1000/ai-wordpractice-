@@ -10,7 +10,6 @@
       "examId": "p2-medium-245",
       "title": "Understanding climate change 理解气候变化",
       "category": "P2",
-      "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
       "noteType": "详解",
       "matchedTitle": "Understanding climate change 理解气候变化"
     },

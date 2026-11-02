@@ -1,12 +1,15 @@
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
-import { speakingHandler, json } from './speaking.js';
+import type { ServerResponse } from 'node:http';
+function json(res: ServerResponse, status: number, data: { error: string }) {
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(data));
+}
 const root = resolve('dist');
 const mime: Record<string,string> = { '.html':'text/html; charset=utf-8', '.js':'text/javascript', '.css':'text/css', '.json':'application/json', '.svg':'image/svg+xml', '.png':'image/png', '.jpg':'image/jpeg', '.ico':'image/x-icon', '.mp3':'audio/mpeg', '.wav':'audio/wav', '.pdf':'application/pdf', '.md':'text/plain; charset=utf-8' };
 createServer(async (req,res) => {
   const path = new URL(req.url || '/', 'http://localhost').pathname;
-  if (path === '/api/speaking') { await speakingHandler(req,res); return; }
   if (!['GET','HEAD'].includes(req.method || '')) { json(res,405,{error:'Method not allowed'}); return; }
   try {
     const file = resolve(root, '.' + decodeURIComponent(path === '/' ? '/index.html' : path));

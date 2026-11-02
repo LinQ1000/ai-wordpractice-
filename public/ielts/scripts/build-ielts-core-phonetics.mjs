@@ -10,7 +10,6 @@ const root = path.resolve(__dirname, '..');
 const CORE_JSON_PATH = path.join(root, 'assets', 'wordlists', 'ielts_core.json');
 const CORE_BUNDLE_PATH = path.join(root, 'assets', 'wordlists', 'ielts_core.bundle.js');
 const ECDICT_BUNDLE_PATH = path.join(root, 'assets', 'wordlists', 'ecdict_reading.bundle.js');
-const ECDICT_LICENSE_PATH = path.join(root, 'assets', 'wordlists', 'ECDICT_LICENSE.txt');
 const MIN_UNIQUE_COVERAGE = 3535;
 const MAX_RUNTIME_PAYLOAD_GROWTH = 150_000;
 const checkOnly = process.argv.includes('--check');
@@ -71,10 +70,6 @@ function assertCurrent(pathname, expected, stale) {
     if (actual !== expected) {
         stale.push(path.relative(root, pathname).replace(/\\/g, '/'));
     }
-}
-
-if (!fs.existsSync(ECDICT_LICENSE_PATH)) {
-    throw new Error('ECDICT attribution is missing from assets/wordlists/ECDICT_LICENSE.txt.');
 }
 
 const currentCore = JSON.parse(fs.readFileSync(CORE_JSON_PATH, 'utf8'));

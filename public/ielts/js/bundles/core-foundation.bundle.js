@@ -6702,7 +6702,7 @@
         panel.className = 'external-backup-panel external-backup-panel--modal';
         var description = global.document.createElement('p');
         description.className = 'external-backup-panel__desc';
-        description.textContent = '绑定本地文件夹后，IELTS Atlas 会写入完整的 v2 数据快照。磁盘文件不会因清理浏览器站点数据而删除；后台写入不会主动请求权限。';
+        description.textContent = '绑定本地文件夹后，IELTS Practice 会写入完整的 v2 数据快照。磁盘文件不会因清理浏览器站点数据而删除；后台写入不会主动请求权限。';
         var statusCard = global.document.createElement('div');
         statusCard.className = 'external-backup-status-card';
         var statusLabel = global.document.createElement('div');
@@ -6981,7 +6981,7 @@
 
 
 /* ===== js/core/siteDataReset.js ===== */
-/** Clear all browser-local IELTS Atlas data while preserving external JSON files. */
+/** Clear all browser-local IELTS Practice data while preserving external JSON files. */
 (function initSiteDataReset(global) {
     'use strict';
 
@@ -7020,7 +7020,7 @@
             request.onsuccess = () => resolve({ name, deleted: true });
             request.onerror = () => reject(request.error || new Error(`删除数据库失败：${name}`));
             request.onblocked = () => notify(
-                `数据库 ${name} 正被其他 IELTS Atlas 标签页占用。请关闭其他标签页，清理会自动继续。`,
+                `数据库 ${name} 正被其他 IELTS Practice 标签页占用。请关闭其他标签页，清理会自动继续。`,
                 'warning'
             );
         });

@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import basic from './data/basic.json';
+import { readingWords } from './reading/storage';
 import { matchesSpelling, spellingRating } from './lib/spelling';
 import { parseStudyPreferences, parseStudyDraft, studyDraftKey, type WordList, type Exercise, type StudyPreferences, type StudyDraft, type PendingAnswer } from './lib/studySession';
 import { selectWords, recordAnswer, storageWarning, batchSize, type Word, type Mode, type Rating } from './stores/learning';
-const props = defineProps<{ mode: Mode }>();
+const props = defineProps<{ mode: Mode; initialList?: WordList }>();
 const emit = defineEmits<{ back: [] }>();
 const titles = { study: '今日单词', review: '到期复习', mistakes: '错词巩固' };
-const listNames = { ielts: 'IELTS 核心词汇', month: '基础 · 月份', week: '基础 · 星期', season: '基础 · 季节' };
+const listNames = { reading: '阅读生词库', ielts: 'IELTS 核心词汇', month: '基础 · 月份', week: '基础 · 星期', season: '基础 · 季节' };
 const words = ref<Word[]>([]);
 const wordList = ref<WordList>('ielts');
 const includeLearned = ref(false);
@@ -44,10 +45,10 @@ const finished = computed(() => !loading.value && words.value.length > 0 && comp
 const currentWord = computed(() => words.value[completed.value]);
 const progress = computed(() => words.value.length ? Math.round(completed.value / words.value.length * 100) : 0);
 const emptyCopy = computed(() => props.mode === 'review'
-  ? { title: '这份词库暂时没有到期单词', text: '已学单词会在到期后出现。你可以切换词库查看，或返回首页学习新词。' }
+  ? { title: '这份词库暂时没有到期单词', text: '已学单词会在到期后出现。你可以切换词库查看，或返回单词概览学习新词。' }
   : props.mode === 'mistakes'
-    ? { title: '这份词库暂时没有错词', text: '不认识、模糊或查看答案后拼对的单词会进入错词巩固。可以切换词库，或返回首页继续学习。' }
-    : { title: '这份词库暂时没有待学单词', text: '可以勾选“包含已学词”再练一次，切换其他词库，或返回首页。' });
+    ? { title: '这份词库暂时没有错词', text: '不认识、模糊或查看答案后拼对的单词会进入错词巩固。可以切换词库，或返回单词概览继续学习。' }
+    : { title: wordList.value === 'reading' && !readingWords.value.length ? '阅读生词库还是空的，先去阅读中收藏单词吧' : '这份词库暂时没有待学单词', text: '可以勾选“包含已学词”再练一次，切换其他词库，或返回单词概览。' });
 function cancelSpeech() { speechVersion++; if ('speechSynthesis' in window) window.speechSynthesis.cancel(); }
 function resetSpelling() {
   typedWord.value = ''; attempts.value = 0; revealed.value = false;
@@ -109,7 +110,8 @@ async function load(fresh = false) {
       const value: unknown = await response.json();
       if (!Array.isArray(value) || !value.every(word => word && typeof word.word === 'string' && typeof word.meaning === 'string')) throw new Error();
       data = value as Word[];
-    } else data = basic[wordList.value];
+    } else if (wordList.value === 'reading') data = readingWords.value;
+    else data = basic[wordList.value];
     if (version !== loadVersion) return;
     const key = studyDraftKey(props.mode, settings());
     let draft: StudyDraft | undefined;
@@ -187,7 +189,7 @@ function keyboard(event: KeyboardEvent) {
   else if (showAnswer.value && ['1','2','3'].includes(event.key)) { event.preventDefault(); answer(({ '1':'hard', '2':'normal', '3':'easy' } as const)[event.key as '1'|'2'|'3']); }
 }
 function back() { saveSession(); emit('back'); }
-onMounted(() => { restorePreferences(); void load(); window.addEventListener('keydown', keyboard); window.addEventListener('pagehide', saveSession); });
+onMounted(() => { restorePreferences(); if (props.initialList) wordList.value = props.initialList; void load(); window.addEventListener('keydown', keyboard); window.addEventListener('pagehide', saveSession); });
 onUnmounted(() => { saveSession(); loadVersion++; cancelSpeech(); window.removeEventListener('keydown', keyboard); window.removeEventListener('pagehide', saveSession); });
 </script>
 
@@ -195,10 +197,10 @@ onUnmounted(() => { saveSession(); loadVersion++; cancelSpeech(); window.removeE
   <div class="study-page">
     <!-- 顶部 -->
     <header class="study-header">
-      <button class="back-button" @click="back">← 返回</button>
+      <button class="back-button" @click="back">← 单词概览</button>
 
       <div class="header-title">
-        <span>AI VOCABULARY</span>
+        <span>IELTS Practice</span>
         <h1>{{ titles[mode] }}</h1>
       </div>
 
@@ -212,7 +214,7 @@ onUnmounted(() => { saveSession(); loadVersion++; cancelSpeech(); window.removeE
       <label v-if="mode === 'study'"><input :checked="includeLearned" type="checkbox" :disabled="loading" @change="changeIncludeLearned"> 包含已学词</label>
     </div>
     <p v-if="sessionNotice" class="session-notice" role="status">{{ sessionNotice }}</p>
-    <p v-if="!loading && !error && words.length && !saveError" class="save-hint">自动保存到当前浏览器 · 返回首页或刷新后，重新进入本模式即可继续</p>
+    <p v-if="!loading && !error && words.length && !saveError" class="save-hint">自动保存到当前浏览器 · 返回单词概览或刷新后，重新进入本模式即可继续</p>
     <p v-if="saveError" class="session-notice save-error" role="alert">{{ saveError }}</p>
     <p v-if="exercise === 'meaning' && !loading && !finished && words.length" class="save-hint">快捷键：Space 查看释义 · 1 不认识 · 2 模糊 · 3 认识（输入或操作控件时不触发）</p>
     <!-- 进度条 -->
@@ -226,9 +228,9 @@ onUnmounted(() => { saveSession(); loadVersion++; cancelSpeech(); window.removeE
 
     <p v-if="storageWarning" role="status">{{ storageWarning }}</p>
     <main v-if="loading" class="study-content">正在加载{{ listNames[wordList] }}…</main>
-    <main v-else-if="error" class="study-content" role="alert">{{ error }} <button class="show-button" @click="load()">重新加载</button> <button class="hint-button" @click="back">返回首页</button></main>
+    <main v-else-if="error" class="study-content" role="alert">{{ error }} <button class="show-button" @click="load()">重新加载</button> <button class="hint-button" @click="back">返回单词概览</button></main>
     <main v-else-if="finished || !words.length" class="study-content">
-      <div class="word-card"><h2>{{ finished ? '学习完成！' : emptyCopy.title }}</h2><p v-if="finished">本次完成 {{ completed }} 个单词，认识 / 首次拼对 {{ recognized }} 个。</p><p v-if="spellingCompleted">拼写完成 {{ spellingCompleted }} 词，首次独立拼对 {{ firstTryCorrect }} 词。</p><p v-if="!words.length">{{ emptyCopy.text }}</p><button v-if="finished" class="show-button" @click="load(true)">继续下一组</button> <button class="show-button" @click="back">返回首页</button></div>
+      <div class="word-card"><h2>{{ finished ? '学习完成！' : emptyCopy.title }}</h2><p v-if="finished">本次完成 {{ completed }} 个单词，认识 / 首次拼对 {{ recognized }} 个。</p><p v-if="spellingCompleted">拼写完成 {{ spellingCompleted }} 词，首次独立拼对 {{ firstTryCorrect }} 词。</p><p v-if="!words.length">{{ emptyCopy.text }}</p><button v-if="finished" class="show-button" @click="load(true)">继续下一组</button> <button class="show-button" @click="back">返回单词概览</button></div>
     </main>
     <!-- 单词卡片 -->
     <main v-else-if="currentWord" class="study-content">

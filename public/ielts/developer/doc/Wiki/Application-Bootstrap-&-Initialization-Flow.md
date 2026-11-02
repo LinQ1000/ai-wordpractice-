@@ -748,7 +748,7 @@ sequenceDiagram
 ```html
 <div id="boot-overlay" role="status" aria-live="polite">
     <div class="boot-panel">
-        <div class="boot-logo">SHUI · IELTS</div>
+        <div class="boot-logo">IELTS Practice</div>
         <p class="boot-status" id="boot-status-text">正在唤醒考试总览系统...</p>
         <div class="boot-progress">
             <span class="boot-progress__bar" id="boot-progress-bar"></span>

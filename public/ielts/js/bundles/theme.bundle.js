@@ -60,12 +60,9 @@ function applyTheme(theme) {
 }
 
 function applyDefaultTheme() {
-    const root = document.documentElement;
-    try {
-        root.removeAttribute('data-theme');
-        window.AppData.preferences.setTheme('default').catch((error) => console.warn('[Theme] 保存主题失败:', error));
-        themePreferenceController.recordInternalTheme('default');
-    } catch (e) {}
+    if (typeof window.switchBgTheme === 'function') {
+        window.switchBgTheme('apple');
+    }
 }
 
 function showThemeSwitcherModal() {
@@ -145,8 +142,7 @@ async function initializeThemeSwitcher() {
         await window.AppData.ready;
         await themePreferenceController.hydrate();
         const savedTheme = await window.AppData.preferences.getTheme();
-        if (savedTheme && savedTheme !== 'default') document.documentElement.setAttribute('data-theme', savedTheme);
-        else document.documentElement.removeAttribute('data-theme');
+        document.documentElement.setAttribute('data-theme', savedTheme === 'apple-custom' ? 'heroui' : 'apple');
     } catch (e) {}
 
     // Close modal when clicking outside

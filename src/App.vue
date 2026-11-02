@@ -1,28 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import Study from './Study.vue';
-import ExamPractice from './ExamPractice.vue';
-import Speaking from './Speaking.vue';
+import type { WordList } from './lib/studySession';
+const props = defineProps<{ initialList?: WordList }>();
 import { records, today, activities, learnedWords, accuracy, studiedToday, minutesToday, streak, batchSize, saveSettings, storageWarning, refreshLearningDate, type Mode } from './stores/learning';
 import { dailyGoal, saveDailyGoal, preferencesWarning } from './stores/studyPreferences';
-import { practiceHistory } from './stores/practiceHistory';
-type Page = 'home' | 'study' | 'stats' | 'settings' | 'listening' | 'writing' | 'speaking';
-const pages: Page[] = ['home','study','stats','settings','listening','writing','speaking'];
-const currentPage = ref<Page>('home');
+type Page = 'home' | 'study' | 'stats' | 'settings';
+const pages: Page[] = ['home','study','stats','settings'];
+const currentPage = ref<Page>('study');
 const mode = ref<Mode>('study');
-function readLocation() {
-  const hash = location.hash.slice(1);
-  if (hash === 'review' || hash === 'mistakes') { mode.value = hash; currentPage.value = 'study'; }
-  else { mode.value = 'study'; currentPage.value = pages.includes(hash as Page) ? hash as Page : 'home'; }
-  const canonical = currentPage.value === 'study' ? mode.value : currentPage.value;
-  if (location.hash !== `#${canonical}`) history.replaceState(null, '', `#${canonical}`);
-}
-readLocation();
 watch([currentPage, mode], () => {
-  const hash = currentPage.value === 'study' ? mode.value : currentPage.value;
-  if (location.hash !== `#${hash}`) history.pushState(null, '', `#${hash}`);
-  document.title = `${pageTitle.value} · AI Vocabulary`;
-  window.scrollTo({ top: 0 });
   nextTick(() => document.getElementById('page-title')?.focus({ preventScroll: true }));
 });
 const clock = ref(Date.now());
@@ -30,12 +17,10 @@ let timer: ReturnType<typeof setInterval>;
 function refreshClock() { clock.value = Date.now(); refreshLearningDate(); }
 onMounted(() => {
   refreshClock(); timer = setInterval(refreshClock, 30000);
-  window.addEventListener('hashchange', readLocation);
   document.addEventListener('visibilitychange', refreshClock);
-  document.title = `${pageTitle.value} · AI Vocabulary`;
 });
 onUnmounted(() => {
-  clearInterval(timer); window.removeEventListener('hashchange', readLocation);
+  clearInterval(timer);
   document.removeEventListener('visibilitychange', refreshClock);
 });
 const todayWords = computed(() => Object.values(records.value).filter(p => p.due <= clock.value).length);
@@ -46,20 +31,9 @@ const greeting = computed(() => {
   const hour = new Date(clock.value).getHours();
   return hour < 6 ? '夜深了，按自己的节奏来' : hour < 12 ? '早上好，开始今天的一小步' : hour < 18 ? '下午好，给英语留一点时间' : '晚上好，今天也进步一点';
 });
-const pageTitle = computed(() => ({home:'你的学习空间', study:'单词练习', stats:'学习统计', settings:'学习设置', listening:'IELTS 听力', writing:'IELTS 写作', speaking:'IELTS 口语'}[currentPage.value]));
+const pageTitle = computed(() => ({home:'单词学习概览', study:'单词练习', stats:'学习统计', settings:'学习设置'}[currentPage.value]));
 const heroTitle = computed(() => goalComplete.value ? '今日目标已完成，辛苦了' : todayWords.value ? `先巩固 ${todayWords.value} 个到期词` : studiedToday.value ? '接着上次的进度，继续一点点' : '从一组单词开始');
 const heroDescription = computed(() => goalComplete.value ? '可以休息一下，也可以换一种练习。每一步积累都会留下来。' : todayWords.value ? '先复习，再学新词。每组数量可以调整，不用一次全部完成。' : `今天的目标是 ${dailyGoal.value} 个词，每组 ${batchSize.value} 个。中途离开也可以接着练。`);
-const skillCards = [
-  { id:'reading', icon:'📖', title:'IELTS 阅读', description:'阅读文章、完成题目、核对答案', action:'进入阅读', href:'/ielts/index.html' },
-  { id:'listening', icon:'🎧', title:'IELTS 听力', description:'边听边答，按题号标记难点', action:'练习听力' },
-  { id:'writing', icon:'✍️', title:'IELTS 写作', description:'专心写作，随时保存和导出', action:'练习写作' },
-  { id:'speaking', icon:'🎙️', title:'IELTS 口语', description:'回答题目，获取 AI 表达建议', action:'练习口语' },
-] as const;
-const recentPractice = computed(() => practiceHistory.value.slice(0, 3));
-function formatDate(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '时间未知' : date.toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
-}
 const settingSize = ref(batchSize.value);
 const settingGoal = ref(dailyGoal.value);
 const settingsMessage = ref('');
@@ -77,75 +51,18 @@ function skipToMain() { document.getElementById('main-content')?.focus(); }
 </script>
 
 <template>
-  <Study v-if="currentPage === 'study'" :key="mode" :mode="mode" @back="goHome" />
-
-  <ExamPractice v-else-if="currentPage === 'listening' || currentPage === 'writing'" :key="currentPage" :kind="currentPage" @back="goHome" />
-
-  <Speaking v-else-if="currentPage === 'speaking'" @back="goHome" />
+  <nav class="practice-tabs" aria-label="单词练习导航">
+    <button :aria-current="currentPage === 'study' && mode === 'study' ? 'page' : undefined" @click="startStudy()">单词练习</button>
+    <button :aria-current="currentPage === 'study' && mode === 'review' ? 'page' : undefined" @click="startStudy('review')">到期复习</button>
+    <button :aria-current="currentPage === 'study' && mode === 'mistakes' ? 'page' : undefined" @click="startStudy('mistakes')">错词巩固</button>
+    <button :aria-current="currentPage === 'home' ? 'page' : undefined" @click="goHome">单词概览</button>
+    <button :aria-current="currentPage === 'stats' ? 'page' : undefined" @click="currentPage = 'stats'">学习统计</button>
+    <button :aria-current="currentPage === 'settings' ? 'page' : undefined" @click="currentPage = 'settings'">学习设置</button>
+  </nav>
+  <Study v-if="currentPage === 'study'" :key="mode" :mode="mode" :initial-list="props.initialList" @back="goHome" />
 
   <div v-else class="app">
     <a class="skip-link" href="#main-content" @click.prevent="skipToMain">跳到主要内容</a>
-    <!-- 左侧菜单 -->
-    <aside class="sidebar">
-      <div class="logo">
-        <div class="logo-icon">A</div>
-        <div>
-          <h2>AI Vocabulary</h2>
-          <span>Smart English Learning</span>
-        </div>
-      </div>
-
-      <nav aria-label="主导航">
-        <a class="nav-item" href="/ielts/index.html">📖 IELTS 阅读</a>
-        <a class="nav-item" href="#listening" @click.prevent="currentPage = 'listening'">🎧 IELTS 听力</a>
-        <a class="nav-item" href="#writing" @click.prevent="currentPage = 'writing'">✍️ IELTS 写作</a>
-        <a class="nav-item" href="#speaking" @click.prevent="currentPage = 'speaking'">🎙️ IELTS 口语</a>
-        <div class="nav-title">学习</div>
-
-        <a class="nav-item" :class="{ active: currentPage === 'home' }" :aria-current="currentPage === 'home' ? 'page' : undefined" href="#home" @click.prevent="goHome">
-          <span>🏠</span>
-          首页
-        </a>
-
-        <a class="nav-item" href="#study" @click.prevent="startStudy()">
-          <span>📖</span>
-          背单词
-        </a>
-
-        <a class="nav-item" href="#review" @click.prevent="startStudy('review')">
-          <span>🔄</span>
-          智能复习
-        </a>
-
-        <a class="nav-item" href="#mistakes" @click.prevent="startStudy('mistakes')">
-          <span>❌</span>
-          错题本
-        </a>
-
-        <div class="nav-title">数据</div>
-
-        <a class="nav-item" :class="{ active: currentPage === 'stats' }" :aria-current="currentPage === 'stats' ? 'page' : undefined" href="#stats" @click.prevent="currentPage = 'stats'">
-          <span>📊</span>
-          学习统计
-        </a>
-
-        <a class="nav-item" :class="{ active: currentPage === 'settings' }" :aria-current="currentPage === 'settings' ? 'page' : undefined" href="#settings" @click.prevent="currentPage = 'settings'">
-          <span>⚙️</span>
-          设置
-        </a>
-      </nav>
-
-      <div class="sidebar-bottom">
-        <div class="streak-box">
-          <div class="fire">🔥</div>
-          <div>
-            <strong>{{ streak }} 天</strong>
-            <span>连续学习</span>
-          </div>
-        </div>
-      </div>
-    </aside>
-
     <!-- 主内容 -->
     <main id="main-content" class="main" tabindex="-1">
       <!-- 顶部 -->
@@ -160,7 +77,7 @@ function skipToMain() { document.getElementById('main-content')?.focus(); }
 
       <p v-if="storageWarning" role="alert">{{ storageWarning }}</p>
       <p v-if="preferencesWarning" role="alert">{{ preferencesWarning }}</p>
-      <nav class="mobile-actions" aria-label="移动端导航"><button :aria-current="currentPage==='home' ? 'page' : undefined" @click="goHome">首页</button><button @click="startStudy()">背单词</button><button @click="startStudy('review')">复习</button><button @click="startStudy('mistakes')">错词</button><button :aria-current="currentPage==='stats' ? 'page' : undefined" @click="currentPage = 'stats'">统计</button><button :aria-current="currentPage==='settings' ? 'page' : undefined" @click="currentPage = 'settings'">设置</button></nav>
+
       <section v-if="currentPage === 'settings'" class="panel">
         <h2>安排适合自己的学习节奏</h2><p>每日目标用于记录当天进度；每组词数决定一次练多少。每组优先安排到期词，再补充新词。</p>
         <form class="learning-settings" @submit.prevent="applySettings">
@@ -190,7 +107,7 @@ function skipToMain() { document.getElementById('main-content')?.focus(); }
         </div>
 
         <div class="progress-circle">
-          <div class="circle" role="progressbar" :aria-valuenow="goalProgress" aria-valuemin="0" aria-valuemax="100" aria-label="今日单词目标完成度" :style="{ background: `conic-gradient(white ${goalProgress}%, rgba(255,255,255,.22) 0)` }">
+          <div class="circle" role="progressbar" :aria-valuenow="goalProgress" aria-valuemin="0" aria-valuemax="100" aria-label="今日单词目标完成度" :style="{ background: `conic-gradient(#0071e3 ${goalProgress}%, #e8e8ed 0)` }">
             <div class="circle-inner">
             <strong>{{ goalProgress }}%</strong>
             <span>{{ goalComplete ? '已完成今日目标' : '今日目标' }}</span>
@@ -270,11 +187,7 @@ function skipToMain() { document.getElementById('main-content')?.focus(); }
           <button class="start-button" @click="startStudy()">开始学习 →</button>
         </div>
       </section>
-      <section class="skills-section" aria-labelledby="skills-title">
-        <div class="panel-header"><div><h2 id="skills-title">换一种方式练英语</h2><p>听、说、读、写，选一个现在想练的。</p></div></div>
-        <div class="skill-grid"><article v-for="skill in skillCards" :key="skill.id" class="skill-card"><span class="skill-icon" aria-hidden="true">{{ skill.icon }}</span><h3>{{ skill.title }}</h3><p>{{ skill.description }}</p><a v-if="skill.id==='reading'" :href="skill.href">{{ skill.action }} →</a><button v-else @click="currentPage=skill.id">{{ skill.action }} →</button></article></div>
-      </section>
-      <section v-if="recentPractice.length" class="panel recent-practice" aria-labelledby="recent-title"><h2 id="recent-title">最近完成的练习</h2><p>进入对应模块，在“练习记录”中回看答案和反馈。</p><ul><li v-for="item in recentPractice" :key="item.id"><div><strong>{{ item.title }}</strong><span>{{ formatDate(item.date) }} · {{ item.summary }}</span></div><button @click="currentPage=item.skill">进入{{ {listening:'听力',writing:'写作',speaking:'口语'}[item.skill] }} →</button></li></ul></section>
+
       </template>
     </main>
   </div>
@@ -925,28 +838,15 @@ button {
 .goal-presets { display:flex; gap:8px; flex-wrap:wrap; }
 .goal-presets button { padding:9px 14px; border:1px solid #d8dbea; border-radius:8px; background:#fff; color:#475569; }
 .goal-presets button[aria-pressed=true] { background:#eeeeff; border-color:#5b5ce2; color:#4142b8; }
-.skills-section,.recent-practice { margin-top:28px; }
-.skills-section h2,.recent-practice h2,.panel h2 { font-size:20px; }
+.skills-section { margin-top:28px; }
+.reading-link { display:inline-block; text-decoration:none; }
+.skills-section h2,.panel h2 { font-size:20px; }
 .skills-section .panel-header p { font-size:14px; color:#64748b; margin-top:10px; }
-.skill-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
-.skill-card { display:flex; flex-direction:column; gap:12px; padding:22px; background:#fff; border:1px solid #e8ebf0; border-radius:17px; }
-.skill-icon { font-size:26px; }
-.skill-card h3 { font-size:17px; }
-.skill-card p { flex:1; font-size:13px; line-height:1.8; color:#64748b; }
-.skill-card a,.skill-card button { display:block; padding:10px 0; border:0; background:transparent; text-align:left; color:#4849b8; text-decoration:none; font-size:14px; font-weight:600; }
-.recent-practice ul { list-style:none; }
-.recent-practice li { padding:16px 0; border-top:1px solid #e8ebf0; display:flex; justify-content:space-between; align-items:center; gap:16px; }
-.recent-practice li div { min-width:0; overflow-wrap:anywhere; }
-.recent-practice li strong { font-size:14px; }
-.recent-practice li span { display:block; color:#64748b; font-size:12px; margin-top:8px; line-height:1.6; }
-.recent-practice button { flex-shrink:0; border:1px solid #d8dbea; background:#fff; padding:10px 12px; border-radius:8px; color:#4849b8; }
-.mobile-actions button { background:white; border:1px solid #d8dbea; color:#475569; border-radius:8px; padding:10px 14px; }
+.mobile-actions a,.mobile-actions button { text-decoration:none; font-size:14px; background:white; border:1px solid #d8dbea; color:#475569; border-radius:8px; padding:10px 14px; }
 .mobile-actions button[aria-current=page] { background:#5b5ce2; border-color:#5b5ce2; color:white; }
 .nav-item:hover { background:#f4f4ff; }
 .task-info span { color:#64748b; font-size:12px; line-height:1.6; }
-@media(max-width:1150px) { .skill-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-@media(max-width:700px) { .header h1 { font-size:24px; }.header { align-items:flex-start; }.welcome { max-width:230px; line-height:1.6; }.local-note { display:none; }.hero-left h2 { font-size:23px; }.skill-card { padding:18px; }.skill-card h3 { font-size:16px; }.recent-practice li { align-items:flex-start; flex-direction:column; }.stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }.stat-card { padding:14px; gap:8px; }.stat-icon { display:none; }.stat-card span { color:#64748b; font-size:12px; }.stat-card small { color:#527160; font-size:11px; }.main { padding:20px 16px; } }
-@media(max-width:360px) { .skill-grid { grid-template-columns:1fr; } }
+@media(max-width:700px) { .header h1 { font-size:24px; }.header { align-items:flex-start; }.welcome { max-width:230px; line-height:1.6; }.local-note { display:none; }.hero-left h2 { font-size:23px; }stats { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }.stat-card { padding:14px; gap:8px; }.stat-icon { display:none; }.stat-card span { color:#64748b; font-size:12px; }.stat-card small { color:#527160; font-size:11px; }.main { padding:20px 16px; } }
 </style>
 
 <style scoped>
@@ -957,4 +857,15 @@ button {
 input { max-width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
 .mobile-actions { display: none; }
 @media (max-width: 700px) { .mobile-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; } }
+</style>
+
+<style>
+.embedded-practice body { background: transparent; }
+.embedded-practice .app { min-height: 0; }
+.embedded-practice .main { width: 100%; max-width: none; padding: 20px 8px; }
+.embedded-practice .study-page { min-height: 0; padding: 20px 8px; background: transparent; }
+.practice-tabs { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 8px; }
+.practice-tabs button { border: 1px solid #d8dbea; border-radius: 10px; padding: 10px 16px; background: white; color: #475569; }
+.practice-tabs button[aria-current=page] { background: #5b5ce2; border-color: #5b5ce2; color: white; }
+@media (max-width: 700px) { .practice-tabs button { flex: 1 0 28%; padding: 10px 6px; } }
 </style>

@@ -3433,9 +3433,6 @@ console.log('[DOM] DOM工具库已加载，统一事件委托、DOM创建和样�
     var morePrefetchPromise = null;
     var settingsPrefetchPromise = null;
     var indexInteractionsInitialized = false;
-    var licenseModalInitialized = false;
-    var licenseModalInitializationPromise = null;
-    var licenseModalRenderToken = 0;
 
     function ensureBrowse() {
         if (browsePrefetched) {
@@ -3771,8 +3768,6 @@ function ensureSettings() {
                 return typeof global.hideThemeSwitcherModal === 'function' ? global.hideThemeSwitcherModal() : undefined;
             case 'switch-bg-theme':
                 return typeof global.switchBgTheme === 'function' ? global.switchBgTheme(value) : undefined;
-            case 'accept-license':
-                return typeof global.acceptGplLicense === 'function' ? global.acceptGplLicense() : undefined;
             default:
                 return undefined;
         }
@@ -4093,93 +4088,6 @@ function ensureSettings() {
         global.updateSegmentedIndicators = syncAll;
     }
 
-    function getLicenseModal() {
-        return global.document ? global.document.getElementById('license-modal') : null;
-    }
-
-    function getConsentPreferences() {
-        var preferences = global.AppData && global.AppData.preferences;
-        if (!preferences || typeof preferences.getConsent !== 'function' || typeof preferences.setConsent !== 'function') {
-            throw new Error('AppData preferences consent API is unavailable');
-        }
-        return preferences;
-    }
-
-    function hasAcceptedLicense() {
-        return Promise.resolve().then(function () {
-            return getConsentPreferences().getConsent();
-        }).then(function (consent) {
-            return !!(consent && consent.hasSeenGplLicense === true);
-        });
-    }
-
-    function showLicenseModal() {
-        var modal = getLicenseModal();
-        if (!modal) {
-            return;
-        }
-        var renderToken = ++licenseModalRenderToken;
-        global.requestAnimationFrame(function () {
-            global.requestAnimationFrame(function () {
-                if (renderToken !== licenseModalRenderToken) {
-                    return;
-                }
-                modal.classList.add('show');
-            });
-        });
-    }
-
-    function hideLicenseModal() {
-        licenseModalRenderToken += 1;
-        var modal = getLicenseModal();
-        if (modal) {
-            modal.classList.remove('show');
-        }
-    }
-
-    function acceptGplLicense() {
-        var preferences;
-        return Promise.resolve().then(function () {
-            preferences = getConsentPreferences();
-            return preferences.getConsent();
-        }).then(function (consent) {
-            return preferences.setConsent(Object.assign({}, consent || {}, {
-                hasSeenGplLicense: true
-            }));
-        }).then(function () {
-            hideLicenseModal();
-            return true;
-        }).catch(function (error) {
-            console.error('[LicenseModal] Failed to save GPL license consent:', error);
-            return false;
-        });
-    }
-
-    function initLicenseModal() {
-        if (licenseModalInitialized) {
-            return licenseModalInitializationPromise || Promise.resolve();
-        }
-        licenseModalInitialized = true;
-        licenseModalInitializationPromise = hasAcceptedLicense().then(function (accepted) {
-            if (!accepted) {
-                showLicenseModal();
-            }
-        }).catch(function (error) {
-            console.error('[LicenseModal] Failed to load GPL license consent:', error);
-            showLicenseModal();
-        });
-        return licenseModalInitializationPromise;
-    }
-
-    global.LicenseModal = Object.assign({}, global.LicenseModal || {}, {
-        init: initLicenseModal,
-        show: showLicenseModal,
-        hide: hideLicenseModal,
-        accept: acceptGplLicense,
-        hasAccepted: hasAcceptedLicense
-    });
-    global.acceptGplLicense = acceptGplLicense;
-
     function initializeIndexInteractions() {
         setupIndexSettingsButtons();
         setupQuickLaneInteractions();
@@ -4195,7 +4103,6 @@ function ensureSettings() {
         attachNavPrefetch();
         setupHeroNavLiquidIndicator();
         initializeIndexInteractions();
-        initLicenseModal();
     }
 
     if (document.readyState === 'loading') {

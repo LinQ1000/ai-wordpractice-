@@ -125,4 +125,4 @@ git push origin contrib/<short-description>
 - PR 的目标分支是 `opensource`，不是 `main`。
 - 改动范围集中，且未包含密钥、个人数据、本地缓存或不应公开分发的第三方材料。
 - 已按改动类型运行相关测试，并在 PR 说明中记录结果；纯文档改动至少应检查链接、路径和命令是否有效。
-- 已阅读并遵守仓库的 [README](README.md) 与 [LICENSE](LICENSE)。
+- 已阅读并遵守仓库的 [README](README.md) 。

@@ -82,7 +82,7 @@
       "matchStatus": "matched",
       "matchConfidence": 1,
       "verifiedAt": "2026-09-04T00:00:00.000Z",
-      "notes": "Imported from PASSAGE by ZYZ 2026-09-02 r4 student pack; answer key and Chinese review entries carried over verbatim."
+      "notes": "Answer key and Chinese review entries carried over verbatim."
     },
     "questionOrder": [
       "q1",

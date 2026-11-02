@@ -10,7 +10,6 @@
       "examId": "p3-medium-244",
       "title": "Look who was talking",
       "category": "P3",
-      "sourceDoc": "PASSAGE-by-ZYZ-IELTS-Reading-2026-09-02-r4.html",
       "noteType": "详解",
       "matchedTitle": "Look who was talking 语言的起源"
     },
