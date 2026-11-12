@@ -1,0 +1,65 @@
+{
+  "environment": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "node": "v26.0.0",
+    "vue": "3.5.43",
+    "vite": "8.3.1",
+    "typescript": "5.9.3"
+  },
+  "baseURL": "http://127.0.0.1:3208",
+  "checks": [
+    {
+      "url": "/",
+      "method": "GET",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "url": "/",
+      "method": "HEAD",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "url": "/reading/catalog.json",
+      "method": "GET",
+      "status": 200,
+      "contentType": "application/json"
+    },
+    {
+      "url": "/reading/exams/p1-high-01.json",
+      "method": "GET",
+      "status": 200,
+      "contentType": "application/json"
+    },
+    {
+      "url": "/reading/dictionary.json",
+      "method": "GET",
+      "status": 200,
+      "contentType": "application/json"
+    },
+    {
+      "url": "/not-found",
+      "method": "GET",
+      "status": 404,
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "url": "/",
+      "method": "POST",
+      "status": 405,
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "url": "/assets/index-B0BobmGa.js",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "url": "/assets/index-DmlZwsHZ.css",
+      "method": "GET",
+      "status": 200
+    }
+  ]
+}

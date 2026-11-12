@@ -1,0 +1,10 @@
+
+> ielts-practice@0.0.0 test:browser
+> node tests/reading-browser.mjs
+
+Catalog audit: {"count":238,"total":3199,"problems":[]}
+PASS answer draft restored after refresh
+PASS selected reading word receives a definition, is saved and marked
+PASS completed reading saved/reviewable and collected words available for vocabulary practice
+PASS question-bank creation and duplicate-question rejection
+PASS desktop and mobile reading layouts do not overflow

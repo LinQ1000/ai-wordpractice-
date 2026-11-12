@@ -1,0 +1,19 @@
+
+> ielts-practice@0.0.0 test
+> node --experimental-strip-types --test tests/*.test.mjs
+
+✔ text grading normalizes case, full-width letters and whitespace (2.3625ms)
+✔ wrong, unanswered and excessive-length answers do not score (0.192792ms)
+✔ explicit alternatives and optional source words are accepted (0.804625ms)
+✔ multi-select scores without order and awards partial credit (0.17925ms)
+✔ duplicate, invalid and oversized selections cannot inflate marks (0.109875ms)
+✔ summary uses points, not number of controls (0.175959ms)
+✔ input answers are not mutated by grading (1.238667ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 219.155333

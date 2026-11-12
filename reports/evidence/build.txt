@@ -1,0 +1,24 @@
+
+> ielts-practice@0.0.0 build
+> npm run prepare:reading && npm run typecheck && vite build && tsc -p tsconfig.server.json
+
+
+> ielts-practice@0.0.0 prepare:reading
+> node scripts/prepare-reading-data.mjs
+
+Prepared 238 reading resources as JSON.
+Prepared 20261 dictionary entries.
+
+> ielts-practice@0.0.0 typecheck
+> vue-tsc --noEmit && tsc -p tsconfig.server.json --noEmit
+
+vite v8.3.1 building client environment for production...
+transforming...
+✓ 45 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.41 kB │ gzip:  0.29 kB
+dist/assets/index-DmlZwsHZ.css   26.89 kB │ gzip:  6.25 kB
+dist/assets/index-B0BobmGa.js   139.75 kB │ gzip: 50.89 kB
+
+✓ built in 770ms

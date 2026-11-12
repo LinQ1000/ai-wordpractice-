@@ -1,0 +1,150 @@
+
+成都锦城学院实验报告
+
+课程名称
+专业综合实战2
+任课教师
+毛丽娟
+学  院
+
+计算机与软件学院
+学生姓名 
+林谦
+学生学号 
+233020696
+业级 专班
+2023级前端技术开发方向2班
+地    点
+待填写
+日   期
+待填写
+项目名称
+项目开发（IELTS Practice）
+类     型
+□演示性实验 □验证性实验√综合性实验□设计性实验 □创新性实验
+目的及要求
+（1）目的：使学生在开发过程中，加深对前端基础知识的掌握，加深对工程化开发方式的熟练程度。
+（2）要求：学生掌握工程化的开发方式，能够按照需求来实现自己的项目。
+
+
+原     理
+（1）内容：根据需求分析、概要设计、详细设计来进行项目开发和调试。
+（2）方法：编码、调试。
+
+仪器设备及材料
+（1）环境：macOS（arm64）笔记本，本地项目工作目录。
+（2）工具：Node.js、npm、Visual Studio Code、Chrome；数据存储采用浏览器 localStorage，无须独立数据库服务。
+内容、过程及结果分析
+一、项目名称
+IELTS Practice——基于 Vue 3 与 TypeScript 的雅思阅读与词汇学习系统。
+项目目标是把阅读训练、自动判分、练习记录和词汇巩固整合到同一前端应用中。阅读过程中可选词收藏，保存释义、上下文和文章来源，再进入阅读生词库进行拼写与间隔复习。
+二、核心代码（按论文格式编号展现）
+2.1 系统结构与开发范围
+系统采用 Vue 3 Composition API 管理交互状态，TypeScript 定义题目和记录模型，Vite 负责开发与构建；Node.js 仅提供生产静态文件。新版阅读与单词模块由同一 Vue 应用渲染，不使用 iframe。
+表4-1 核心模块与职责
+模块
+主要文件
+功能
+题库管理
+QuestionBank.vue / adapter.ts
+搜索、分类、分页、自建题目、导入校验和导出
+阅读答题
+ReadingPractice.vue / html.ts
+文章与题目展示、输入交互、选区获取、展示内容过滤
+自动判分
+grading.ts
+文本规范化、备选答案、多选无序匹配及部分得分
+数据保存
+storage.ts / ReadingRecords.vue
+草稿恢复、记录快照、回看和导出
+阅读生词
+WordDialog.vue / ReadingWordBank.vue
+释义查询、手动补充、收藏去重和词汇练习联动
+
+2.2 统一题目模型
+通过统一模型把参考内容与答题状态分开，降低各题型之间的耦合。accepted 表示文本或单选可接受答案，correctSet 表示多选正确集合，points 表示分值。题目来源与练习记录一起保存，避免将复用资源误写为自编试题。
+代码4-1 题目数据模型（src/reading/model.ts 节选）
+01  export interface Question {
+02    id: string;
+03    label: string;
+04    kind: 'text' | 'choice' | 'multi' | 'matching';
+05    promptHtml: string;
+06    options: Option[];
+07    accepted: string[];
+08    points: number;
+09    correctSet?: string[];
+10    maxWords?: number;
+11    selectionCount?: number;
+12  }
+13  export type Answers = Record<string, string | string[]>;
+2.3 判分逻辑
+判分逻辑提取为独立纯函数，不直接操作页面。文本统一全角字符、大小写、英文弯引号及连续空格；多选题采用集合比对，忽略选择顺序，去除重复值，并拒绝超量或不存在的选项。
+代码4-2 答案规范化与多选判分（grading.ts 节选）
+01  export function normalizeAnswer(value: string): string {
+02    return value.normalize('NFKC').toLowerCase().trim()
+03      .replace(/[’‘]/g, "'").replace(/\s+/g, ' ');
+04  }
+05  // gradeQuestion 中的多选分支
+06  const chosen = Array.isArray(raw)
+07    ? [...new Set(raw.map(normalizeAnswer))] : [];
+08  const expected = new Set(
+09    (question.correctSet || []).map(normalizeAnswer)
+10  );
+11  if (chosen.length <= (question.selectionCount || question.points)
+12    && chosen.every(v => question.options.some(
+13      o => normalizeAnswer(o.value) === v))) {
+14    earned = Math.min(question.points,
+15      chosen.filter(v => expected.has(v)).length);
+16  }
+备选答案与可选词还会通过 alternatives 函数展开；gradeExam 对各题结果进行求和，计算正确率并输出逐题状态。本实现提供练习得分，不换算未经验证的 IELTS 等级。
+2.4 草稿保存与练习记录
+阅读输入发生变化时保存草稿，计时器同步保存累计用时；重新进入同篇文章后，按 examId 恢复 sessionId、answers 和 seconds。已提交记录包含文章快照，因此后续编辑自建题目不会改写历史结果。
+代码4-3 草稿持久化（ReadingPractice.vue，排版整理）
+01  function persist() {
+02    if (!result.value) {
+03      saveDraft({
+04        version: 1, examId: props.exam.id, sessionId,
+05        answers: answers.value, seconds: seconds.value,
+06        updatedAt: new Date().toISOString()
+07      });
+08    }
+09  }
+10  watch(answers, persist, { deep: true });
+代码4-4 同一会话记录去重（storage.ts，排版整理）
+01  export function saveRecord(record: ReadingRecord) {
+02    const next = [record, ...readingHistory.value
+03      .filter(r => r.id !== record.id)];
+04    if (!write('ielts-practice-reading-records-v1', next)) {
+05      return false;
+06    }
+07    readingHistory.value = next;
+08    return true;
+09  }
+2.5 阅读选词收藏与词汇练习联动
+通过 window.getSelection() 和 Range 获取文章或题目区域内的英文选区，校验单词或短语格式后显示“加入生词库”。收藏窗口按需查询本地词典；若未收录则要求手动输入释义，不将空释义保存为学习内容。
+代码4-5 阅读生词去重保存（storage.ts，排版整理）
+01  export function saveReadingWord(word: ReadingWord) {
+02    const next = [word, ...readingWords.value.filter(w =>
+03      w.word.toLowerCase() !== word.word.toLowerCase())];
+04    if (!write('ielts-practice-reading-words-v1', next)) {
+05      return false;
+06    }
+07    readingWords.value = next;
+08    return true;
+09  }
+生词同时保留 example、examId、sourceTitle 和 source。原文采用标记样式提示已收藏单词；Study.vue 增加 reading 词库分支，复用已有拼写、释义记忆、到期复习和错词巩固逻辑。
+2.6 输入校验与页面安全
+adapter.ts 校验题目编号、题型、来源、答案、选项和分值。html.ts 使用 DOMParser 解析展示内容，移除脚本、事件属性及不允许的标签，仅保留安全的排版元素和限定的图片地址。来源说明和参考答案以数据形式处理，不加载旧阅读界面的业务脚本。
+三、开发结果与分析
+本次运行 npm test，通过 7 项判分逻辑测试；浏览器全量检查覆盖 238 篇文章、3,199 分题目，格式适配与参考答案得分一致性检查通过。阅读草稿刷新恢复、选词收藏、提交回看、阅读生词进入词汇练习及手机布局也已验证。上述一致性检查不等同于对原试题答案进行学科审定。
+
+图4-1 阅读题库与自建题目管理界面
+
+图4-2 阅读答题及原文生词标记界面
+本实验将数据适配、判分纯函数、界面状态与存储职责分离，有利于独立调试和回归验证。当前限制包括仅在本地浏览器保存数据、旧版阅读记录未自动迁移，以及缺少云端账号与跨设备同步。
+四、开发与资料来源说明
+新版阅读模块在编程助手辅助下实现；已有单词练习工程和学习算法继续沿用。文章、题目及原始参考答案来自项目既有资源（https://github.com/sallowayma-git/IELTS-practice），本地词典数据来源包括 ECDICT（https://github.com/skywind3000/ECDICT）。个人编码、理解、调试与测试贡献应按实际参与情况在答辩材料中说明。
+成绩
+
+
+
